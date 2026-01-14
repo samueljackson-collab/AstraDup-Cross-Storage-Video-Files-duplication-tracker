@@ -1,0 +1,5 @@
+{
+  "name": "AstraDup: Cross-Storage AI Video De-duplication System",
+  "description": "AstraDup is an intelligent video de-duplication system that detects true duplicates across heterogeneous storage (local drives, NAS, cloud buckets) using multi-modal AI analysis. This application provides a user-friendly interface to manage scans, review duplicates, and reclaim storage space.",
+  "requestFramePermissions": []
+}
