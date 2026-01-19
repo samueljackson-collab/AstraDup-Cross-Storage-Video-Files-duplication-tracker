@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { getFileDetails, getDuplicatesForFile } from '../services/api';
@@ -21,7 +20,8 @@ const AccordionItem: React.FC<AccordionItemProps> = ({ title, children, isOpen, 
   
   return (
     <div className="border-b border-slate-800 last:border-b-0">
-      <h3 aria-level="3">
+      {/* Fix: Changed aria-level from string "3" to number {3} to satisfy TypeScript's type checking for accessibility attributes. */}
+      <h3 aria-level={3}>
         <button
           type="button"
           className="flex items-center justify-between w-full p-5 font-medium text-left text-slate-300 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-700"

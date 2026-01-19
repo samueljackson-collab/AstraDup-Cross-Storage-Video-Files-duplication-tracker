@@ -167,7 +167,11 @@ const DuplicateResultDisplay: React.FC<{ result: ScanResult }> = ({ result }) =>
                     <input
                         type="checkbox"
                         checked={allSelected}
-                        ref={el => el && (el.indeterminate = isIndeterminate)}
+                        ref={el => {
+                          if (el) {
+                            el.indeterminate = isIndeterminate;
+                          }
+                        }}
                         onChange={handleSelectAll}
                         className="h-5 w-5 rounded bg-slate-700 border-slate-600 text-indigo-500 focus:ring-2 focus:ring-offset-0 focus:ring-indigo-500 ring-offset-slate-800/50"
                         aria-label="Select all pairs"

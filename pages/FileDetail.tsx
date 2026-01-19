@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { getFileDetails, getDuplicatesForFile } from '../services/api';
 import type { AnyFile, VideoFile, ImageFile, DocumentFile } from '../types';
 import Spinner from '../components/Spinner';
-import { ArrowLeftIcon, CheckCircleIcon, ChevronDownIcon, ExternalLinkIcon } from '../components/Icons';
+import { ArrowLeftIcon, CheckCircleIcon, ChevronDownIcon, ExternalLinkIcon, XCircleIcon } from '../components/Icons';
 import Button from '../components/Button';
 import { FilmIcon, PhotoIcon, DocumentTextIcon } from '../components/FileTypeIcons';
 
@@ -21,7 +20,8 @@ const AccordionItem: React.FC<AccordionItemProps> = ({ title, children, isOpen, 
   
   return (
     <div className="border-b border-slate-800 last:border-b-0">
-      <h3 aria-level="3">
+      {/* Fix: Changed aria-level from string "3" to number {3} to satisfy TypeScript's type checking for accessibility attributes. */}
+      <h3 aria-level={3}>
         <button
           type="button"
           className="flex items-center justify-between w-full p-5 font-medium text-left text-slate-300 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-700"
@@ -105,10 +105,7 @@ const AnalysisItem: React.FC<{ label: string; value?: string | number | React.Re
     );
 }
 
-const DuplicateItem: React.FC<{ currentFileId: string; duplicate: AnyFile }> = ({ currentFileId, duplicate }) => {
-    const [isMarked, setIsMarked] = useState(false);
-    const handleMark = () => setIsMarked(true);
-
+const DuplicateItem: React.FC<{ currentFileId: string; duplicate: AnyFile; onMarkAsNotDuplicate: (duplicateId: string) => void; }> = ({ currentFileId, duplicate, onMarkAsNotDuplicate }) => {
     const FileTypeIcon = {
         video: FilmIcon,
         image: PhotoIcon,
@@ -128,8 +125,9 @@ const DuplicateItem: React.FC<{ currentFileId: string; duplicate: AnyFile }> = (
                 </div>
             </div>
             <div className="flex items-center space-x-2 flex-shrink-0 ml-4">
-                <Button onClick={handleMark} disabled={isMarked} variant="secondary" className="text-xs">
-                    {isMarked ? <><CheckCircleIcon className="h-4 w-4 mr-2 text-green-400" /> Marked</> : 'Mark as Not Duplicate'}
+                <Button onClick={() => onMarkAsNotDuplicate(duplicate.id)} variant="secondary" className="text-xs">
+                    <XCircleIcon className="h-4 w-4 mr-2" />
+                    Not a Duplicate
                 </Button>
                 <Link to={`/compare/${currentFileId}/${duplicate.id}`}>
                     <Button className="text-xs">Compare</Button>
@@ -162,6 +160,13 @@ const FileDetail: React.FC = () => {
       });
     }
   }, [fileId]);
+
+  const handleMarkAsNotDuplicate = (duplicateId: string) => {
+    setDuplicates(currentDuplicates =>
+      currentDuplicates.filter(dup => dup.id !== duplicateId)
+    );
+    // In a real application, an API call would be made here to persist this change.
+  };
   
   const getAccordionItems = () => {
     if (!file) return [];
@@ -211,7 +216,7 @@ const FileDetail: React.FC = () => {
         content: (
             <div className="space-y-4">
                 {duplicates.length > 0 ? (
-                    duplicates.map(dup => <DuplicateItem key={dup.id} currentFileId={file.id} duplicate={dup} />)
+                    duplicates.map(dup => <DuplicateItem key={dup.id} currentFileId={file.id} duplicate={dup} onMarkAsNotDuplicate={handleMarkAsNotDuplicate} />)
                 ) : (
                     <div className="text-center text-slate-400 py-8 bg-slate-800/20 rounded-lg"><p>No other duplicates found.</p></div>
                 )}
@@ -263,7 +268,7 @@ const FileDetail: React.FC = () => {
       <div className="lg:flex lg:space-x-8">
         <div className="lg:w-1/2">
           {file.fileType === 'video' ? (
-             <video controls poster={file.thumbnailUrl} src={(file as VideoFile).videoUrl} className="rounded-lg w-full aspect-video object-cover bg-black" />
+             <video controls poster={file.thumbnailUrl} src={(file as VideoFile).videoUrl} className="rounded-lg w-full aspect-video object-contain bg-black" />
           ) : (
              <img src={file.thumbnailUrl} alt={file.name} className="rounded-lg w-full aspect-video object-cover bg-black" />
           )}
