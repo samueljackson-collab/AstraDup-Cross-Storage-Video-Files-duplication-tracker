@@ -1,7 +1,8 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getFileDetails, enrichVideoMetadata } from '../services/api';
+import { getFileDetails } from '../services/api';
+import { analyzeVideoFrames, groundedQuery } from '../services/gemini';
 import type { AnyFile, VideoFile, ImageFile, DocumentFile, EnrichedVideoMetadata } from '../types';
 import Spinner from '../components/Spinner';
 import { ArrowLeftIcon, CheckCircleIcon, TrashIcon } from '../components/Icons';
@@ -83,19 +84,115 @@ const EnrichmentPanel: React.FC<{ file: VideoFile }> = ({ file }) => {
     const [suggestions, setSuggestions] = useState<EnrichedVideoMetadata | null>(null);
     const [loading, setLoading] = useState(false);
     const [isApplied, setIsApplied] = useState(false);
+    const [error, setError] = useState('');
 
     const [selectedChanges, setSelectedChanges] = useState({ title: true, plot: true, genre: true, actors: true, rename: true });
     const [manualTitle, setManualTitle] = useState('');
+    
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
 
     useEffect(() => {
-        if(suggestions) setManualTitle(suggestions.title);
-    }, [suggestions]);
+        if(suggestions) {
+            setManualTitle(suggestions.title);
+            // Smartly decide if renaming is needed
+            const currentName = file.name.replace(/\.[^/.]+$/, "").replace(/_/g, " ");
+            const suggestedTitle = suggestions.title.replace(/_/g, " ");
+            if (currentName.toLowerCase().includes(suggestedTitle.toLowerCase()) || suggestedTitle.toLowerCase().includes(currentName.toLowerCase())) {
+                setSelectedChanges(prev => ({ ...prev, rename: false }));
+            }
+        }
+    }, [suggestions, file.name]);
     
+     const extractFrames = (duration: number): Promise<{ data: string, mimeType: string }[]> => {
+        return new Promise((resolve, reject) => {
+            const video = videoRef.current;
+            const canvas = canvasRef.current;
+            if (!video || !canvas) return reject(new Error("Video or Canvas not ready"));
+
+            const frames: { data: string, mimeType: string }[] = [];
+            const timestamps = [duration * 0.2, duration * 0.5, duration * 0.8];
+            let index = 0;
+            
+            const seekListener = () => {
+                if(index < timestamps.length) {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    canvas.getContext('2d')?.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    frames.push({ data: canvas.toDataURL('image/jpeg', 0.8), mimeType: 'image/jpeg' });
+                    index++;
+                    if(index < timestamps.length) {
+                        video.currentTime = timestamps[index];
+                    } else {
+                        video.removeEventListener('seeked', seekListener);
+                        resolve(frames);
+                    }
+                }
+            };
+
+            const loadedMetadataListener = () => {
+                 video.addEventListener('seeked', seekListener);
+                 video.currentTime = timestamps[index];
+            };
+
+            video.addEventListener('loadedmetadata', loadedMetadataListener, { once: true });
+            
+            if (video.readyState >= 1) { // If metadata already loaded
+                loadedMetadataListener();
+            }
+        });
+    };
+
     const handleEnrich = async () => {
         setLoading(true);
-        const data = await enrichVideoMetadata(file.id);
-        setSuggestions(data);
-        setLoading(false);
+        setIsApplied(false);
+        setSuggestions(null);
+        setError('');
+        
+        if (!videoRef.current) {
+            setLoading(false);
+            setError("Video element ref is not available.");
+            return;
+        }
+
+        try {
+            const frames = await extractFrames(videoRef.current.duration);
+            if (frames.length === 0) throw new Error("Could not extract any frames from the video.");
+
+            const prompt = `Analyze the video frames. The current filename is "${file.name}". Suggest a proper title, a short plot summary, potential actors, and a genre. Respond ONLY with a valid JSON object with keys: "title", "plot", "actors" (string array), "genre" (string), and "releaseDate" (YYYY-MM-DD string, or empty string if unknown).`;
+            const response = await analyzeVideoFrames(prompt, frames);
+            
+            let jsonString = response.text.trim();
+            if (jsonString.startsWith('```json')) {
+                jsonString = jsonString.substring(7, jsonString.length - 3).trim();
+            } else if (jsonString.startsWith('```')) {
+                 jsonString = jsonString.substring(3, jsonString.length - 3).trim();
+            }
+            
+            const data = JSON.parse(jsonString);
+
+            const searchQuery = `"${data.title}" ${data.releaseDate ? `(${data.releaseDate.split('-')[0]})` : ''} movie details`;
+            const searchResponse = await groundedQuery(searchQuery);
+            const firstWebResult = searchResponse.candidates?.[0]?.groundingMetadata?.groundingChunks?.find((c: any) => c.web)?.web;
+
+            const finalSuggestions: EnrichedVideoMetadata = {
+                title: data.title || file.name,
+                plot: data.plot || 'No plot summary available.',
+                actors: data.actors || [],
+                genre: data.genre || 'Unknown',
+                releaseDate: data.releaseDate || '',
+                source: {
+                    name: firstWebResult?.title || "Gemini AI Analysis",
+                    url: firstWebResult?.uri || "",
+                }
+            };
+            setSuggestions(finalSuggestions);
+        } catch (err) {
+            console.error("Failed to enrich metadata:", err);
+            setError("Failed to analyze video. Please check your API key and network connection.");
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleApply = () => {
@@ -107,7 +204,7 @@ const EnrichmentPanel: React.FC<{ file: VideoFile }> = ({ file }) => {
     const suggestedFilename = useMemo(() => {
         if (!suggestions) return '';
         const datePart = suggestions.releaseDate ? `(${suggestions.releaseDate.split('-')[0]})` : '';
-        const cleanTitle = manualTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        const cleanTitle = manualTitle.replace(/[^a-z0-9]/gi, '_').replace(/_+/g, '_');
         return `${cleanTitle}${datePart}.mp4`;
     }, [suggestions, manualTitle]);
 
@@ -118,45 +215,54 @@ const EnrichmentPanel: React.FC<{ file: VideoFile }> = ({ file }) => {
         </div>
     }
 
-    if (!suggestions) {
-        return <div className="bg-slate-900 border border-slate-800 rounded-lg p-4 mt-4">
-            <h3 className="text-md font-semibold text-white mb-2">Enrich Metadata</h3>
-            <p className="text-xs text-slate-400 mb-4">Fetch rich metadata like title, plot, and actors from online databases to improve organization.</p>
-            <Button onClick={handleEnrich} disabled={loading} className="w-full">
-                {loading ? <Spinner /> : 'Find & Suggest Metadata'}
-            </Button>
-        </div>
-    }
-    
-    return <div className="bg-slate-900 border-2 border-indigo-800 rounded-lg p-4 mt-4">
-        <h3 className="text-md font-semibold text-white mb-2">Enrichment Suggestions</h3>
-        <p className="text-xs text-slate-400 mb-4">Review and apply suggested changes. Source: <a href={suggestions.source.url} target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline">{suggestions.source.name}</a></p>
-        <div className="space-y-3 text-xs">
-            <div>
-                <label className="flex items-center"><input type="checkbox" checked={selectedChanges.title} onChange={e => setSelectedChanges({...selectedChanges, title: e.target.checked})} className="h-4 w-4 rounded bg-slate-700 border-slate-600 text-indigo-500 focus:ring-indigo-600" /> <span className="ml-2 text-slate-400">Title</span></label>
-                <input type="text" value={manualTitle} onChange={e => setManualTitle(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md py-1 px-2 text-white mt-1 text-xs" />
+    return (
+        <>
+            <video ref={videoRef} src={file.videoUrl} className="hidden" crossOrigin="anonymous" preload="metadata" muted playsInline></video>
+            <canvas ref={canvasRef} className="hidden"></canvas>
+            <div className={`bg-slate-900 border ${suggestions ? 'border-2 border-indigo-800' : 'border-slate-800'} rounded-lg p-4 mt-4`}>
+                {!suggestions ? (
+                    <>
+                        <h3 className="text-md font-semibold text-white mb-2">Enrich Metadata</h3>
+                        <p className="text-xs text-slate-400 mb-4">Use AI to analyze the video and fetch rich metadata like title, plot, and actors from online databases.</p>
+                        {error && <p className="text-xs text-red-400 mb-4">{error}</p>}
+                        <Button onClick={handleEnrich} disabled={loading} className="w-full">
+                            {loading ? <Spinner /> : 'Find & Suggest Metadata'}
+                        </Button>
+                    </>
+                ) : (
+                    <>
+                        <h3 className="text-md font-semibold text-white mb-2">Enrichment Suggestions</h3>
+                        <p className="text-xs text-slate-400 mb-4">Review and apply suggested changes. Source: <a href={suggestions.source.url} target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline">{suggestions.source.name}</a></p>
+                        <div className="space-y-3 text-xs">
+                            <div>
+                                <label className="flex items-center"><input type="checkbox" checked={selectedChanges.title} onChange={e => setSelectedChanges({...selectedChanges, title: e.target.checked})} className="h-4 w-4 rounded bg-slate-700 border-slate-600 text-indigo-500 focus:ring-indigo-600" /> <span className="ml-2 text-slate-400">Title</span></label>
+                                <input type="text" value={manualTitle} onChange={e => setManualTitle(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md py-1 px-2 text-white mt-1 text-xs" />
+                            </div>
+                            <div>
+                                <label className="flex items-center"><input type="checkbox" checked={selectedChanges.plot} onChange={e => setSelectedChanges({...selectedChanges, plot: e.target.checked})} className="h-4 w-4 rounded bg-slate-700 border-slate-600 text-indigo-500 focus:ring-indigo-600" /> <span className="ml-2 text-slate-400">Plot Summary</span></label>
+                                <p className="text-slate-300 mt-1 p-2 bg-slate-800/50 rounded">{suggestions.plot}</p>
+                            </div>
+                            <div>
+                                <label className="flex items-center"><input type="checkbox" checked={selectedChanges.genre} onChange={e => setSelectedChanges({...selectedChanges, genre: e.target.checked})} className="h-4 w-4 rounded bg-slate-700 border-slate-600 text-indigo-500 focus:ring-indigo-600" /> <span className="ml-2 text-slate-400">Genre</span></label>
+                                <p className="text-slate-300 mt-1 p-2 bg-slate-800/50 rounded">{suggestions.genre}</p>
+                            </div>
+                            <div>
+                                <label className="flex items-center"><input type="checkbox" checked={selectedChanges.actors} onChange={e => setSelectedChanges({...selectedChanges, actors: e.target.checked})} className="h-4 w-4 rounded bg-slate-700 border-slate-600 text-indigo-500 focus:ring-indigo-600" /> <span className="ml-2 text-slate-400">Actors</span></label>
+                                <p className="text-slate-300 mt-1 p-2 bg-slate-800/50 rounded">{suggestions.actors.join(', ')}</p>
+                            </div>
+                            <hr className="border-slate-700" />
+                            <div>
+                                <label className="flex items-center"><input type="checkbox" checked={selectedChanges.rename} onChange={e => setSelectedChanges({...selectedChanges, rename: e.target.checked})} className="h-4 w-4 rounded bg-slate-700 border-slate-600 text-indigo-500 focus:ring-indigo-600" /> <span className="ml-2 text-slate-400">Suggest New Filename</span></label>
+                                <p className="text-indigo-300 mt-1 p-2 bg-slate-800/50 rounded font-mono break-all">{suggestedFilename}</p>
+                            </div>
+                        </div>
+                        <Button onClick={handleApply} className="w-full mt-4">Confirm & Apply Changes</Button>
+                    </>
+                )}
             </div>
-             <div>
-                <label className="flex items-center"><input type="checkbox" checked={selectedChanges.plot} onChange={e => setSelectedChanges({...selectedChanges, plot: e.target.checked})} className="h-4 w-4 rounded bg-slate-700 border-slate-600 text-indigo-500 focus:ring-indigo-600" /> <span className="ml-2 text-slate-400">Plot Summary</span></label>
-                <p className="text-slate-300 mt-1 p-2 bg-slate-800/50 rounded">{suggestions.plot}</p>
-            </div>
-             <div>
-                <label className="flex items-center"><input type="checkbox" checked={selectedChanges.genre} onChange={e => setSelectedChanges({...selectedChanges, genre: e.target.checked})} className="h-4 w-4 rounded bg-slate-700 border-slate-600 text-indigo-500 focus:ring-indigo-600" /> <span className="ml-2 text-slate-400">Genre</span></label>
-                <p className="text-slate-300 mt-1 p-2 bg-slate-800/50 rounded">{suggestions.genre}</p>
-            </div>
-            <div>
-                <label className="flex items-center"><input type="checkbox" checked={selectedChanges.actors} onChange={e => setSelectedChanges({...selectedChanges, actors: e.target.checked})} className="h-4 w-4 rounded bg-slate-700 border-slate-600 text-indigo-500 focus:ring-indigo-600" /> <span className="ml-2 text-slate-400">Actors</span></label>
-                <p className="text-slate-300 mt-1 p-2 bg-slate-800/50 rounded">{suggestions.actors.join(', ')}</p>
-            </div>
-            <hr className="border-slate-700" />
-            <div>
-                <label className="flex items-center"><input type="checkbox" checked={selectedChanges.rename} onChange={e => setSelectedChanges({...selectedChanges, rename: e.target.checked})} className="h-4 w-4 rounded bg-slate-700 border-slate-600 text-indigo-500 focus:ring-indigo-600" /> <span className="ml-2 text-slate-400">Suggest New Filename</span></label>
-                <p className="text-indigo-300 mt-1 p-2 bg-slate-800/50 rounded font-mono break-all">{suggestedFilename}</p>
-            </div>
-        </div>
-        <Button onClick={handleApply} className="w-full mt-4">Confirm & Apply Changes</Button>
-    </div>
-}
+        </>
+    );
+};
 
 const VideoColumn: React.FC<{ file: VideoFile, original: VideoFile, onDelete: (file: AnyFile) => void }> = ({ file, original, onDelete }) => (
     <div className="w-full">

@@ -3,59 +3,21 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { ScanResult, DuplicatePair, AnyFile } from '../types';
 import Button from './Button';
+import FilePreview from './FilePreview';
 import { InfoIcon, TrashIcon, CheckCircleIcon, XCircleIcon } from './Icons';
 import { FilmIcon, PhotoIcon, DocumentTextIcon } from './FileTypeIcons';
-
-const FileCard: React.FC<{ file: AnyFile }> = ({ file }) => {
-    const FileTypeIcon = {
-        video: FilmIcon,
-        image: PhotoIcon,
-        document: DocumentTextIcon,
-    }[file.fileType];
-
-    return (
-        <div className="bg-slate-900 p-4 rounded-lg flex-1">
-            <div className="relative">
-                <img src={file.thumbnailUrl} alt={file.name} className="w-full aspect-video object-cover rounded-md mb-3 bg-slate-800" />
-                <div className="absolute top-2 right-2 bg-slate-950/50 p-1 rounded-full">
-                    <FileTypeIcon className="h-4 w-4 text-white" />
-                </div>
-            </div>
-            <h4 className="font-semibold text-white truncate text-sm">{file.name}</h4>
-            <p className="text-xs text-slate-400 font-mono truncate">{file.path}</p>
-            <div className="flex justify-between text-xs text-slate-500 mt-2">
-                {file.fileType === 'video' && <span>{file.resolution}</span>}
-                {file.fileType === 'image' && <span>{file.resolution}</span>}
-                {file.fileType === 'document' && <span>{file.pageCount} pages</span>}
-                <span>{file.sizeMB} MB</span>
-                {file.fileType === 'video' && <span>{file.duration}</span>}
-            </div>
-            <Link to={`/file/${file.id}`}>
-                 <Button variant="secondary" className="w-full mt-3 text-xs py-1">
-                    <InfoIcon className="h-3 w-3 mr-2"/>
-                    Details
-                 </Button>
-            </Link>
-        </div>
-    );
-};
 
 const DuplicatePairCard: React.FC<{ pair: DuplicatePair, isSelected: boolean, onSelect: () => void; }> = ({ pair, isSelected, onSelect }) => {
     const scoreColor = pair.similarityScore > 95 ? 'text-green-400' : pair.similarityScore > 85 ? 'text-yellow-400' : 'text-orange-400';
     
     return (
         <div 
-            className={`bg-slate-950 border rounded-lg p-4 transition-colors duration-200 flex items-start space-x-4 cursor-pointer ${isSelected ? 'border-indigo-500' : 'border-slate-800'}`}
-            onClick={onSelect}
-            role="button"
-            tabIndex={0}
-            aria-pressed={isSelected}
+            className={`bg-slate-950 border rounded-lg p-4 transition-colors duration-200 flex items-start space-x-4 ${isSelected ? 'border-indigo-500' : 'border-slate-800'}`}
         >
             <input
                 type="checkbox"
                 checked={isSelected}
                 onChange={onSelect}
-                onClick={(e) => e.stopPropagation()}
                 className="h-5 w-5 rounded bg-slate-700 border-slate-600 text-indigo-500 focus:ring-2 focus:ring-offset-0 focus:ring-indigo-500 ring-offset-slate-950 mt-1"
                 aria-label={`Select pair ${pair.id}`}
             />
@@ -76,12 +38,9 @@ const DuplicatePairCard: React.FC<{ pair: DuplicatePair, isSelected: boolean, on
                     </div>
                 </div>
                 
-                <div className="flex gap-4">
-                    <FileCard file={pair.file1} />
-                    <div className="flex items-center justify-center px-4">
-                        <div className="w-px h-24 bg-slate-700"></div>
-                    </div>
-                    <FileCard file={pair.file2} />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FilePreview file={pair.file1} />
+                    <FilePreview file={pair.file2} />
                 </div>
 
                 <div className="mt-4 text-xs text-slate-400">
@@ -134,7 +93,7 @@ const DuplicateResultDisplay: React.FC<{ result: ScanResult }> = ({ result }) =>
   const allSelected = allPairs.length > 0 && selectedPairs.size === allPairs.length;
   const isIndeterminate = selectedPairs.size > 0 && selectedPairs.size < allPairs.length;
 
-  if (result.duplicatePairs.length === 0) {
+  if (allPairs.length === 0) {
     return (
       <div className="text-center bg-slate-900 border border-slate-800 rounded-lg p-12">
         <CheckCircleIcon className="h-16 w-16 text-green-500 mx-auto mb-4" />

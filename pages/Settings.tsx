@@ -2,6 +2,8 @@
 import React, { useState } from 'react';
 import Button from '../components/Button';
 import { PlusIcon, TrashIcon } from '../components/Icons';
+import { groundedQuery } from '../services/gemini';
+import Spinner from '../components/Spinner';
 
 const SettingsField: React.FC<{ label: string; description: string; children: React.ReactNode }> = ({ label, description, children }) => (
   <div className="flex justify-between items-start py-6 border-b border-slate-800 last:border-b-0">
@@ -24,33 +26,78 @@ const DEFAULT_DATABASES = [
   { id: 'imdb', name: 'IMDb', enabled: true, type: 'default' },
   { id: 'tmdb', name: 'The Movie Database (TMDb)', enabled: true, type: 'default' },
   { id: 'tvdb', name: 'The TVDB', enabled: false, type: 'default' },
-  { id: 'musicbrainz', name: 'MusicBrainz', enabled: true, type: 'default' },
-  { id: 'wikipedia', name: 'Wikipedia', enabled: true, type: 'default' },
-  { id: 'googlebooks', name: 'Google Books', enabled: false, type: 'default' },
-  { id: 'ign', name: 'IGN', enabled: false, type: 'default' },
-  { id: 'steam', name: 'Steam', enabled: false, type: 'default' },
-  { id: 'gog', name: 'GOG.com', enabled: false, type: 'default' },
-  { id: 'igdb', name: 'IGDB', enabled: true, type: 'default' },
 ];
 
 const Settings: React.FC = () => {
   const [databases, setDatabases] = useState(DEFAULT_DATABASES);
   const [customDbInput, setCustomDbInput] = useState('');
+  
+  // State for AI search
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<string[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState('');
+
 
   const handleToggleDb = (id: string) => {
     setDatabases(dbs => dbs.map(db => db.id === id ? { ...db, enabled: !db.enabled } : db));
   };
 
-  const handleAddCustomDb = () => {
-    if (customDbInput.trim() && !databases.some(db => db.name === customDbInput.trim())) {
-      const newDb = { id: `custom_${Date.now()}`, name: customDbInput.trim(), enabled: true, type: 'custom' };
+  const handleAddCustomDb = (name: string) => {
+    if (name.trim() && !databases.some(db => db.name.toLowerCase() === name.trim().toLowerCase())) {
+      const newDb = { id: `custom_${Date.now()}`, name: name.trim(), enabled: true, type: 'custom' };
       setDatabases(dbs => [...dbs, newDb]);
-      setCustomDbInput('');
+      return true;
     }
+    return false;
   };
 
   const handleRemoveCustomDb = (id: string) => {
     setDatabases(dbs => dbs.filter(db => db.id !== id));
+  };
+  
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
+    setIsSearching(true);
+    setSearchError('');
+    setSearchResults([]);
+
+    try {
+        const prompt = `Based on the query "${searchQuery}", find names of relevant movie, TV show, or general entertainment databases. Respond ONLY with a valid JSON array of strings. Example: ["Rotten Tomatoes", "Metacritic"]`;
+        const response = await groundedQuery(prompt);
+        let jsonString = response.text.trim();
+        
+        if (jsonString.startsWith('```json')) {
+            jsonString = jsonString.substring(7, jsonString.length - 3).trim();
+        } else if (jsonString.startsWith('```')) {
+            jsonString = jsonString.substring(3, jsonString.length - 3).trim();
+        }
+
+        const resultsArray = JSON.parse(jsonString);
+        if (Array.isArray(resultsArray)) {
+             const newResults = resultsArray.filter(
+                (result: any) => typeof result === 'string' && !databases.some(db => db.name.toLowerCase() === result.toLowerCase())
+            );
+            setSearchResults(newResults);
+            if (newResults.length === 0) {
+                setSearchError('No new sources found or all suggestions are already in your list.');
+            }
+        } else {
+            throw new Error('Invalid response format from AI.');
+        }
+
+    } catch (error) {
+        console.error("Database search failed:", error);
+        setSearchError("Failed to fetch suggestions. Please try again.");
+    } finally {
+        setIsSearching(false);
+    }
+  };
+  
+  const handleAddFromSearch = (name: string) => {
+    if (handleAddCustomDb(name)) {
+        setSearchResults(prev => prev.filter(r => r !== name));
+    }
   };
 
 
@@ -111,11 +158,29 @@ const Settings: React.FC = () => {
                 </div>
               </div>
            ))}
+            <div className="py-4 border-b border-slate-800">
+                 <p className="text-sm font-medium text-white mb-2">Find Database Sources</p>
+                 <div className="flex">
+                    <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="e.g., popular movie review sites" className="flex-grow bg-slate-800 border border-slate-700 rounded-l-md py-2 px-3 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-sm" onKeyUp={(e) => e.key === 'Enter' && handleSearch()} />
+                    <Button onClick={handleSearch} disabled={isSearching} className="rounded-l-none w-24 justify-center">{isSearching ? <Spinner /> : 'Search'}</Button>
+                 </div>
+                 {searchError && <p className="text-xs text-red-400 mt-2">{searchError}</p>}
+                 {searchResults.length > 0 && (
+                    <div className="mt-3 space-y-2">
+                        {searchResults.map(result => (
+                            <div key={result} className="flex justify-between items-center bg-slate-800/50 p-2 rounded-md">
+                                <span className="text-sm text-slate-300">{result}</span>
+                                <Button onClick={() => handleAddFromSearch(result)} variant="secondary" className="text-xs py-1 px-2"><PlusIcon className="w-4 h-4 mr-1"/> Add</Button>
+                            </div>
+                        ))}
+                    </div>
+                 )}
+            </div>
             <div className="py-4">
-                 <p className="text-sm font-medium text-white mb-2">Add Custom Source</p>
+                 <p className="text-sm font-medium text-white mb-2">Add Custom Source Manually</p>
                 <div className="flex">
                     <input type="text" value={customDbInput} onChange={(e) => setCustomDbInput(e.target.value)} placeholder="e.g., My Personal API" className="flex-grow bg-slate-800 border border-slate-700 rounded-l-md py-2 px-3 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-sm" />
-                    <Button onClick={handleAddCustomDb} className="rounded-l-none"><PlusIcon className="w-5 h-5"/></Button>
+                    <Button onClick={() => { if(handleAddCustomDb(customDbInput)) setCustomDbInput(''); }} className="rounded-l-none"><PlusIcon className="w-5 h-5"/></Button>
                 </div>
             </div>
         </div>
