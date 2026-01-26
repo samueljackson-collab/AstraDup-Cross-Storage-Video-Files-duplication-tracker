@@ -6,7 +6,7 @@ import Spinner from '../components/Spinner';
 import Button from '../components/Button';
 import { startScan } from '../services/api';
 import type { ScanResult, StorageSource, FileType } from '../types';
-import { HardDriveIcon, ServerIcon, CloudIcon, ScanIcon, CheckCircleIcon } from '../components/Icons';
+import { HardDriveIcon, ServerIcon, GoogleDriveIcon, DropboxIcon, OneDriveIcon, CheckCircleIcon } from '../components/Icons';
 import { FilmIcon, PhotoIcon, DocumentTextIcon } from '../components/FileTypeIcons';
 
 type ScanPhase = 'type_selection' | 'source_selection' | 'scanning' | 'complete';
@@ -14,11 +14,12 @@ type ScanPhase = 'type_selection' | 'source_selection' | 'scanning' | 'complete'
 const ALL_STORAGE_SOURCES: StorageSource[] = [
     { id: 'local', name: 'Local Drive', type: 'Local', icon: HardDriveIcon },
     { id: 'nas', name: 'NAS', type: 'NAS', icon: ServerIcon },
-    { id: 's3', name: 'AWS S3', type: 'S3', icon: CloudIcon },
-    { id: 'gcs', name: 'Google Cloud', type: 'GCS', icon: CloudIcon },
-    { id: 'azure', name: 'Azure Blob', type: 'Azure', icon: CloudIcon },
-    { id: 'gdrive', name: 'Google Drive', type: 'Google Drive', icon: CloudIcon },
+    { id: 'gdrive', name: 'Google Drive', type: 'Google Drive', icon: GoogleDriveIcon },
+    { id: 'dropbox', name: 'Dropbox', type: 'Dropbox', icon: DropboxIcon },
+    { id: 'onedrive', name: 'OneDrive', type: 'OneDrive', icon: OneDriveIcon },
 ];
+
+const CLOUD_SOURCE_TYPES: Array<StorageSource['type']> = ['Google Drive', 'Dropbox', 'OneDrive', 'S3', 'GCS', 'Azure'];
 
 const ScanTypeCard: React.FC<{ title: string; icon: React.FC<React.SVGProps<SVGSVGElement>>; onClick: () => void }> = ({ title, icon: Icon, onClick }) => (
     <button
@@ -34,7 +35,9 @@ const ScanTypeCard: React.FC<{ title: string; icon: React.FC<React.SVGProps<SVGS
 const ScanPage: React.FC = () => {
   const [scanPhase, setScanPhase] = useState<ScanPhase>('type_selection');
   const [scanType, setScanType] = useState<FileType | null>(null);
-  const [selectedSources, setSelectedSources] = useState<Set<string>>(new Set());
+  const [selectedSources, setSelectedSources] = useState<Set<string>>(new Set(['local'])); // Select local by default
+  const [connectedSources, setConnectedSources] = useState<Set<string>>(new Set());
+  const [connectingSource, setConnectingSource] = useState<string | null>(null);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [progress, setProgress] = useState(0);
   const [etr, setEtr] = useState('');
@@ -76,6 +79,16 @@ const ScanPage: React.FC = () => {
       return newSelected;
     });
   };
+  
+  const handleConnectSource = (sourceId: string) => {
+    setConnectingSource(sourceId);
+    // Simulate SSO login flow
+    setTimeout(() => {
+        setConnectedSources(prev => new Set(prev).add(sourceId));
+        setSelectedSources(prev => new Set(prev).add(sourceId));
+        setConnectingSource(null);
+    }, 1500);
+  };
 
   const handleStartScan = async () => {
     if (selectedSources.size === 0 || !scanType) return;
@@ -102,7 +115,8 @@ const ScanPage: React.FC = () => {
   const handleNewScan = () => {
     setScanPhase('type_selection');
     setScanResult(null);
-    setSelectedSources(new Set());
+    setSelectedSources(new Set(['local']));
+    // We keep connectedSources state
     setScanType(null);
     setProgress(0);
     setEtr('');
@@ -123,11 +137,15 @@ const ScanPage: React.FC = () => {
                 <>
                   <StorageSelector
                     sources={ALL_STORAGE_SOURCES}
+                    cloudSourceTypes={CLOUD_SOURCE_TYPES}
                     selected={selectedSources}
+                    connected={connectedSources}
+                    connectingId={connectingSource}
                     onToggle={handleToggleSource}
+                    onConnect={handleConnectSource}
                   />
                   <div className="mt-8 flex space-x-4">
-                    <Button onClick={handleStartScan} disabled={selectedSources.size === 0}>
+                    <Button onClick={handleStartScan} disabled={selectedSources.size === 0 || !!connectingSource}>
                       Start {scanType} Scan
                     </Button>
                     <Button onClick={() => setScanPhase('type_selection')} variant="secondary">

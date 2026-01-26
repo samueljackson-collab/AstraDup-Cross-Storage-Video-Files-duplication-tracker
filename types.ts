@@ -14,7 +14,7 @@ export interface DashboardStats {
 export interface StorageSource {
   id: string;
   name: string;
-  type: 'Local' | 'NAS' | 'S3' | 'GCS' | 'Azure' | 'Google Drive';
+  type: 'Local' | 'NAS' | 'S3' | 'GCS' | 'Azure' | 'Google Drive' | 'OneDrive' | 'Dropbox';
   icon: React.FC<React.SVGProps<SVGSVGElement>>;
 }
 

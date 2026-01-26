@@ -37,6 +37,26 @@ export const CloudIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
     </svg>
 );
 
+export const GoogleDriveIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M12 12l-4.5 7.79h9L12 12z" fill="#00C853" stroke="none" /><path d="M4.15 15.8l-2.07-3.6a.5.5 0 0 1 .43-.75H12l-4.5 7.79-3.35-5.8Z" fill="#FFC107" stroke="none"/><path d="M17.85 4.21 12 12l4.5 7.79L21.42 12a.5.5 0 0 0-.42-.75H8.15L12 4.21a.5.5 0 0 1 .85 0z" fill="#4285F4" stroke="none"/>
+  </svg>
+);
+
+export const DropboxIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M12 2 6.5 5.5 12 9l5.5-3.5L12 2z" /><path d="M6.5 5.5 1 9l5.5 3.5L12 9" /><path d="M12 15l-5.5-3.5-5.5 3.5L12 22l11-7-5.5-3.5" /><path d="m17.5 5.5 5.5 3.5-5.5 3.5L12 9" />
+  </svg>
+);
+
+export const OneDriveIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M6.5 18.5a4.5 4.5 0 1 0 0-9H13a6 6 0 1 0-4.5 10.2" fill="#00A1F1" stroke="none" />
+    <path d="M13.5 14.5a3.5 3.5 0 1 0 0-7h-9a5.5 5.5 0 1 0-1.6 10.8" fill="#00A1F1" stroke="none" opacity="0.6"/>
+  </svg>
+);
+
+
 export const ArrowLeftIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
         <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
@@ -75,6 +95,13 @@ export const ExternalLinkIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props)
 
 export const PlusIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+);
+
+export const LinkIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.72"></path>
+    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.72-1.72"></path>
+  </svg>
 );
 
 export const SparklesIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (

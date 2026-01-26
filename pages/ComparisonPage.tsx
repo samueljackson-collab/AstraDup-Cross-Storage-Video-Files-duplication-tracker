@@ -267,7 +267,9 @@ const EnrichmentPanel: React.FC<{ file: VideoFile }> = ({ file }) => {
 const VideoColumn: React.FC<{ file: VideoFile, original: VideoFile, onDelete: (file: AnyFile) => void }> = ({ file, original, onDelete }) => (
     <div className="w-full">
         <div className="relative">
-            <video controls poster={file.thumbnailUrl} src={file.videoUrl} className="rounded-lg w-full aspect-video object-cover bg-black" />
+            <video controls poster={file.thumbnailUrl} src={file.videoUrl} className="rounded-lg w-full aspect-video object-contain bg-black">
+                Your browser does not support the video tag.
+            </video>
             {file.resolution !== original.resolution && <span className="absolute top-2 right-2 bg-amber-900/80 text-amber-300 text-xs font-bold px-2 py-1 rounded-full">{file.resolution}</span>}
         </div>
         <h2 className="text-xl font-bold text-white mt-4 truncate">{file.name}</h2>
@@ -302,8 +304,8 @@ const ImageColumn: React.FC<{ file: ImageFile, original: ImageFile, onDelete: (f
     return (
         <div className="w-full">
             <div className={`relative rounded-lg overflow-hidden ${hasExifDiff ? 'border-2 border-amber-500/50' : ''}`}>
-                <img src={file.thumbnailUrl} alt={file.name} className="w-full aspect-video object-cover bg-black" />
-                {showDiff && overlaySrc && <img src={overlaySrc} alt="diff" className="absolute top-0 left-0 w-full h-full aspect-video object-cover mix-blend-difference" />}
+                <img src={file.thumbnailUrl} alt={file.name} className="w-full aspect-video object-contain bg-black" />
+                {showDiff && overlaySrc && <img src={overlaySrc} alt="diff" className="absolute top-0 left-0 w-full h-full aspect-video object-contain mix-blend-difference" />}
             </div>
             <h2 className="text-xl font-bold text-white mt-4 truncate">{file.name}</h2>
             <p className="text-xs text-slate-400 font-mono break-all">{file.path}</p>

@@ -8,22 +8,16 @@ import { InfoIcon } from './Icons';
 
 const VideoPreview: React.FC<{ file: VideoFile }> = ({ file }) => {
     return (
-        <div className="relative group aspect-video">
+        <div className="relative group aspect-video bg-black rounded-t-lg">
             <video
+                controls
                 poster={file.thumbnailUrl}
                 src={file.videoUrl}
-                className="w-full h-full object-cover rounded-t-lg bg-black"
-                muted
-                loop
-                onMouseOver={e => (e.target as HTMLVideoElement).play()}
-                onMouseOut={e => (e.target as HTMLVideoElement).pause()}
-            />
-            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                 <svg className="w-12 h-12 text-white/80" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
-            </div>
-            <div className="absolute bottom-2 left-2 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded">{file.duration}</div>
-            <div className="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded">{file.resolution}</div>
-            <div className="absolute top-2 right-2 bg-black/50 p-1 rounded-full"><FilmIcon className="h-4 w-4 text-white" /></div>
+                className="w-full h-full object-contain"
+            >
+                Your browser does not support the video tag.
+            </video>
+            <div className="absolute top-2 right-2 bg-black/50 p-1 rounded-full pointer-events-none"><FilmIcon className="h-4 w-4 text-white" /></div>
         </div>
     );
 };

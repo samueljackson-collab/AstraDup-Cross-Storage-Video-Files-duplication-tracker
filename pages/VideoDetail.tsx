@@ -189,7 +189,9 @@ const VideoDetail: React.FC<VideoDetailProps> = ({ file, initialDuplicates }) =>
           </Button>
           <div className="lg:flex lg:space-x-8">
             <div className="lg:w-2/3">
-              <video controls poster={file.thumbnailUrl} src={file.videoUrl} className="rounded-lg w-full aspect-video object-contain bg-black" />
+              <video controls poster={file.thumbnailUrl} src={file.videoUrl} className="rounded-lg w-full aspect-video object-contain bg-black">
+                Your browser does not support the video tag.
+              </video>
               <div className="flex items-center">
                  <h1 className="text-2xl font-bold text-white mt-4">{file.name}</h1>
                  <a href={`https://www.imdb.com/find?q=${encodeURIComponent(file.name.replace(/\.[^/.]+$/, ""))}`} target="_blank" rel="noopener noreferrer" title="Search on IMDb" className="mt-4 ml-3 text-slate-500 hover:text-indigo-400">

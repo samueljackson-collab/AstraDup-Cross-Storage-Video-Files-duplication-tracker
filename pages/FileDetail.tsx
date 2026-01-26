@@ -5,7 +5,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { getFileDetails, getDuplicatesForFile } from '../services/api';
 import type { AnyFile, VideoFile, ImageFile, DocumentFile } from '../types';
 import Spinner from '../components/Spinner';
-import { ArrowLeftIcon, XCircleIcon } from '../components/Icons';
+import { ArrowLeftIcon, XCircleIcon, ChevronDownIcon } from '../components/Icons';
 import Button from '../components/Button';
 import { FilmIcon, PhotoIcon, DocumentTextIcon } from '../components/FileTypeIcons';
 import VideoDetail from './VideoDetail';
@@ -87,6 +87,31 @@ const TabButton: React.FC<{ active: boolean; onClick: () => void; children: Reac
     </button>
 );
 
+const AccordionItem: React.FC<{ title: string; children: React.ReactNode; isOpen: boolean; onToggle: () => void; }> = ({ title, children, isOpen, onToggle }) => (
+    <div className="border-b border-slate-700 last:border-b-0">
+        <h3 className="text-base font-semibold text-white">
+            <button
+                type="button"
+                className="flex items-center justify-between w-full p-4 text-left"
+                onClick={onToggle}
+                aria-expanded={isOpen}
+            >
+                <span>{title}</span>
+                <ChevronDownIcon className={`w-5 h-5 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+            </button>
+        </h3>
+        <div 
+            className={`grid transition-all duration-300 ease-in-out ${isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
+        >
+            <div className="overflow-hidden">
+                <div className="px-4 pb-4">
+                    {children}
+                </div>
+            </div>
+        </div>
+    </div>
+);
+
 
 const FileDetail: React.FC = () => {
   const { fileId } = useParams<{ fileId: string }>();
@@ -95,6 +120,15 @@ const FileDetail: React.FC = () => {
   const [duplicates, setDuplicates] = useState<AnyFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<DetailTab>('details');
+  const [openSections, setOpenSections] = useState({
+      properties: true,
+      exif: true,
+      analysis: true,
+  });
+
+  const toggleSection = (key: keyof typeof openSections) => {
+      setOpenSections(prev => ({ ...prev, [key]: !prev[key] }));
+  };
 
   useEffect(() => {
     if (fileId) {
@@ -134,18 +168,25 @@ const FileDetail: React.FC = () => {
   // Generic renderer for Image and Document files
   const renderDetailsContent = () => {
     return (
-        <div className="space-y-6">
-            <div>
-                <h3 className="text-md font-semibold text-white mb-4">File Properties</h3>
+        <div className="bg-slate-800/20">
+            <AccordionItem title="File Properties" isOpen={openSections.properties} onToggle={() => toggleSection('properties')}>
                 <dl className="grid grid-cols-2 gap-x-4 gap-y-6">
-                <DetailItem label="Size" value={`${file.sizeMB} MB`} />
-                {file.fileType === 'image' && <DetailItem label="Resolution" value={(file as ImageFile).resolution} mono />}
-                {file.fileType === 'image' && <DetailItem label="Camera" value={(file as ImageFile).exif.cameraModel} />}
-                {file.fileType === 'image' && <DetailItem label="Date Taken" value={new Date((file as ImageFile).exif.dateTaken).toLocaleString()} />}
-                {file.fileType === 'document' && <DetailItem label="Page Count" value={(file as DocumentFile).pageCount} />}
-                {file.fileType === 'document' && <DetailItem label="Author" value={(file as DocumentFile).author} />}
+                    <DetailItem label="Size" value={`${file.sizeMB} MB`} />
+                    {file.fileType === 'image' && <DetailItem label="Resolution" value={(file as ImageFile).resolution} mono />}
+                    {file.fileType === 'document' && <DetailItem label="Page Count" value={(file as DocumentFile).pageCount} />}
+                    {file.fileType === 'document' && <DetailItem label="Word Count" value={(file as DocumentFile).wordCount} />}
+                    {file.fileType === 'document' && <DetailItem label="Author" value={(file as DocumentFile).author} />}
                 </dl>
-            </div>
+            </AccordionItem>
+            {file.fileType === 'image' && (
+                <AccordionItem title="EXIF Data" isOpen={openSections.exif} onToggle={() => toggleSection('exif')}>
+                    <dl className="grid grid-cols-2 gap-x-4 gap-y-6">
+                        <DetailItem label="Camera" value={(file as ImageFile).exif.cameraModel} />
+                        <DetailItem label="Date Taken" value={new Date((file as ImageFile).exif.dateTaken).toLocaleString()} />
+                        <DetailItem label="ISO" value={(file as ImageFile).exif.iso} />
+                    </dl>
+                </AccordionItem>
+            )}
         </div>
     );
   };
@@ -169,12 +210,18 @@ const FileDetail: React.FC = () => {
             default: return null;
         }
     }
-    return <div className="space-y-6">{items()}</div>;
+    return (
+        <div className="bg-slate-800/20">
+            <AccordionItem title="AI Analysis" isOpen={openSections.analysis} onToggle={() => toggleSection('analysis')}>
+                <div className="space-y-6">{items()}</div>
+            </AccordionItem>
+        </div>
+    );
   };
 
   const renderDuplicatesContent = () => {
     return (
-        <div className="space-y-4">
+        <div className="p-5 space-y-4">
             {duplicates.length > 0 ? (
                 duplicates.map(dup => <DuplicateItem key={dup.id} currentFileId={file!.id} duplicate={dup} onMarkAsNotDuplicate={handleMarkAsNotDuplicate} />)
             ) : (
@@ -192,14 +239,19 @@ const FileDetail: React.FC = () => {
       </Button>
       <div className="lg:flex lg:space-x-8">
         <div className="lg:w-2/3">
-           <img src={file.thumbnailUrl} alt={file.name} className="rounded-lg w-full aspect-video object-cover bg-black" />
+           <div className="aspect-video bg-black rounded-lg flex items-center justify-center">
+             {file.fileType === 'document' ? 
+                <DocumentTextIcon className="h-32 w-32 text-slate-700" /> :
+                <img src={file.thumbnailUrl} alt={file.name} className="w-full h-full object-contain" />
+             }
+           </div>
            <div className="flex items-center">
              <h1 className="text-2xl font-bold text-white mt-4">{file.name}</h1>
            </div>
           <p className="text-sm text-slate-400 font-mono break-all">{file.path}</p>
         </div>
         <div className="lg:w-1/3 mt-6 lg:mt-0">
-           <div className="bg-slate-900 border border-slate-800 rounded-lg">
+           <div className="bg-slate-900 border border-slate-800 rounded-lg overflow-hidden">
                 <div className="border-b border-slate-800 px-4">
                     <nav className="-mb-px flex space-x-6" aria-label="Tabs">
                         <TabButton active={activeTab === 'details'} onClick={() => setActiveTab('details')}>Details</TabButton>
@@ -207,7 +259,7 @@ const FileDetail: React.FC = () => {
                         <TabButton active={activeTab === 'duplicates'} onClick={() => setActiveTab('duplicates')} badge={duplicates.length}>Duplicates</TabButton>
                     </nav>
                 </div>
-                <div className="p-5">
+                <div>
                     {activeTab === 'details' && renderDetailsContent()}
                     {activeTab === 'analysis' && renderAnalysisContent()}
                     {activeTab === 'duplicates' && renderDuplicatesContent()}

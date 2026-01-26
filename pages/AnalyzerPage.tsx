@@ -4,7 +4,7 @@ import type { GenerateContentResponse } from '@google/genai';
 import Button from '../components/Button';
 import Spinner from '../components/Spinner';
 import { FilmIcon, PhotoIcon } from '../components/FileTypeIcons';
-import { GlobeIcon, UploadCloudIcon } from '../components/Icons';
+import { GlobeIcon, UploadCloudIcon, SparklesIcon } from '../components/Icons';
 import { analyzeImage, analyzeVideoFrames, groundedQuery } from '../services/gemini';
 
 type AnalyzerTool = 'image' | 'video' | 'web';
@@ -117,7 +117,7 @@ const ImageAnalyzer = () => {
                     placeholder="e.g., Describe this scene, what is the brand of the car?"
                 />
                 <Button onClick={handleSubmit} disabled={!file || !prompt || loading} className="w-full mt-4">
-                    {loading ? <Spinner /> : 'Analyze Image'}
+                    {loading ? <Spinner /> : <><SparklesIcon className="h-4 w-4 mr-2" />Analyze Image</>}
                 </Button>
                 <ResultDisplay result={result} error={error} />
             </div>
@@ -151,7 +151,6 @@ const VideoAnalyzer = () => {
             let index = 0;
     
             const seekListener = () => {
-                video.removeEventListener('seeked', seekListener);
                 if (index < timestamps.length) {
                     canvas.width = video.videoWidth;
                     canvas.height = video.videoHeight;
@@ -159,16 +158,24 @@ const VideoAnalyzer = () => {
                     frames.push({ data: canvas.toDataURL('image/jpeg', 0.8), mimeType: 'image/jpeg' });
                     index++;
                     if (index < timestamps.length) {
-                        video.addEventListener('seeked', seekListener, { once: true });
                         video.currentTime = timestamps[index];
                     } else {
+                        video.removeEventListener('seeked', seekListener);
                         resolve(frames);
                     }
                 }
             };
     
-            video.addEventListener('seeked', seekListener, { once: true });
-            video.currentTime = timestamps[index];
+            const loadedMetadataListener = () => {
+                 video.addEventListener('seeked', seekListener);
+                 video.currentTime = timestamps[index];
+            };
+
+            video.addEventListener('loadedmetadata', loadedMetadataListener, { once: true });
+
+            if (video.readyState >= 1) { // If metadata already loaded
+                loadedMetadataListener();
+            }
         });
     };
 
@@ -200,16 +207,10 @@ const VideoAnalyzer = () => {
         }
     };
 
-    const handleLoadedMetadata = () => {
-        if (videoRef.current && isNaN(videoRef.current.duration)) {
-             console.warn("Video duration is NaN.");
-        }
-    };
-
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
-                {file ? <video ref={videoRef} src={URL.createObjectURL(file)} controls className="rounded-lg w-full aspect-video object-contain bg-black" onLoadedMetadata={handleLoadedMetadata} /> : <Dropzone onDrop={setFile} accept="video/*" fileType="video" />}
+                {file ? <video ref={videoRef} src={URL.createObjectURL(file)} controls className="rounded-lg w-full aspect-video object-contain bg-black" crossOrigin="anonymous" preload="metadata"/> : <Dropzone onDrop={setFile} accept="video/*" fileType="video" />}
                 <canvas ref={canvasRef} className="hidden" />
                 {file && <Button variant="secondary" className="w-full mt-2" onClick={() => setFile(null)}>Clear Video</Button>}
             </div>
@@ -223,7 +224,7 @@ const VideoAnalyzer = () => {
                     placeholder="e.g., Summarize this video, what are the key objects?"
                 />
                 <Button onClick={handleSubmit} disabled={!file || !prompt || loading} className="w-full mt-4">
-                    {loading ? <><Spinner /> <span className="ml-2">{status}</span></> : 'Analyze Video'}
+                    {loading ? <><Spinner /> <span className="ml-2">{status}</span></> : <><SparklesIcon className="h-4 w-4 mr-2" />Analyze Video</>}
                 </Button>
                 <ResultDisplay result={result} error={error} />
             </div>
