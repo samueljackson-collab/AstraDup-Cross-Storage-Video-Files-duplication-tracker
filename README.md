@@ -216,7 +216,7 @@ AstraDup uses Gemini models for AI analysis and enrichment. Provide an API key v
 
 ```bash
 # .env.local
-API_KEY=your-api-key-here
+VITE_API_KEY=your-api-key-here
 ```
 
 If the key is missing, the UI will still load, but AI analysis requests will fail.
