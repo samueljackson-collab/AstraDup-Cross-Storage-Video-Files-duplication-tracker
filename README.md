@@ -204,11 +204,11 @@ astra-dup/
 
 | Technology | Version | Purpose |
 |------------|---------|---------|
-| React | 19.x | UI framework |
-| TypeScript | 5.8.x | Type safety |
-| Vite | 6.x | Build tool and dev server |
-| Google GenAI SDK | latest | Gemini API integration |
-| React Router | 6.23.x | Routing |
+| React            | 18.x   | UI framework              |
+| TypeScript       | 5.x    | Type safety               |
+| Vite             | 5.x    | Build tool and dev server |
+| Google GenAI SDK | latest | Gemini API integration    |
+| React Router     | 6.23.x | Routing                   |
 
 ## API Configuration
 
