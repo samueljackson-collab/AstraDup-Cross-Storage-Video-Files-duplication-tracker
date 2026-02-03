@@ -194,7 +194,9 @@ astra-dup/
 │   ├── ScanPage.tsx
 │   ├── ComparisonPage.tsx
 │   ├── AnalyzerPage.tsx
-│   └── Settings.tsx
+│   ├── Settings.tsx
+│   ├── FileDetail.tsx
+│   └── VideoDetail.tsx
 ├── components/             # Shared UI components
 ├── services/               # Mock API + Gemini integration
 └── types.ts                # Shared type definitions
