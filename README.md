@@ -53,8 +53,8 @@ Core workflow:
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/samueljackson-collab/AstraDup-Cross-Storage-Video-Files-duplication-tracker.git
-   cd AstraDup-Cross-Storage-Video-Files-duplication-tracker
+   git clone https://github.com/samueljackson-collab/AstraDup-Cross-Storage-Video-Files-duplication-tracker.git astra-dup
+   cd astra-dup
    ```
 
 2. **Install dependencies**
