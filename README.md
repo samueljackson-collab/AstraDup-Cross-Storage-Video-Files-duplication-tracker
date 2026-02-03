@@ -74,7 +74,7 @@ Core workflow:
    npm run dev
    ```
 
-5. **Open your browser** at the URL shown in the terminal (typically `http://localhost:5173`).
+5. **Open your browser** at the URL shown in the terminal (typically `http://localhost:3000`).
 
 ### Production Build
 
