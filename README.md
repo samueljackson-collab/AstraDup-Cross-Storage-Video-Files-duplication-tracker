@@ -184,7 +184,7 @@ AstraDup is currently front-end only and uses a mocked API layer for demo purpos
 ## Project Structure
 
 ```
-AstraDup-Cross-Storage-Video-Files-duplication-tracker/
+astra-dup/
 ├── App.tsx                 # App routes
 ├── index.tsx               # App entry point
 ├── index.html              # HTML template
