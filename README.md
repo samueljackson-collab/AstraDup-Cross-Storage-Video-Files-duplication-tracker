@@ -218,7 +218,7 @@ AstraDup uses Gemini models for AI analysis and enrichment. Provide an API key v
 
 ```bash
 # .env.local
-VITE_API_KEY=your-api-key-here
+GEMINI_API_KEY=your-api-key-here
 ```
 
 If the key is missing, the UI will still load, but AI analysis requests will fail.
@@ -227,9 +227,9 @@ If the key is missing, the UI will still load, but AI analysis requests will fai
 
 ### Common Issues
 
-**"VITE_API_KEY environment variable not set"**
+**"GEMINI_API_KEY environment variable not set"**
 - Ensure `.env.local` exists in the project root.
-- Confirm the variable name is `VITE_API_KEY`.
+- Confirm the variable name is `GEMINI_API_KEY`.
 - Restart the dev server after editing the file.
 
 **AI analysis fails**
