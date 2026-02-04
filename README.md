@@ -1,208 +1,262 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+# AstraDup: Cross-Storage AI Deduplication Tracker
 
-# AstraDup
-
-**Cross-Storage AI Video, Image & Document De-duplication System**
-
-[![React](https://img.shields.io/badge/React-19-61dafb?logo=react)](https://react.dev)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178c6?logo=typescript)](https://www.typescriptlang.org)
-[![Vite](https://img.shields.io/badge/Vite-6-646cff?logo=vite)](https://vitejs.dev)
-[![Gemini AI](https://img.shields.io/badge/Gemini-AI%20Powered-4285f4?logo=google)](https://ai.google.dev)
-
-</div>
-
----
-
-AstraDup is an intelligent de-duplication system that detects true duplicates across heterogeneous storage — local drives, NAS, and cloud providers — using multi-modal AI analysis. Unlike simple file hash checks, AstraDup understands the **content** of your files, finding duplicates even when they have been re-encoded, renamed, resized, or edited.
+AstraDup is a cross-storage duplication tracker for videos, images, and documents. It provides an AI-assisted workflow to scan multiple storage sources, compare duplicate candidates, and enrich metadata so you can confidently reclaim space without losing important files.
 
 ## Table of Contents
 
-- [Features](#features)
-- [Supported Storage Sources](#supported-storage-sources)
-- [Supported File Types](#supported-file-types)
-- [Tech Stack](#tech-stack)
+- [Overview](#overview)
+- [Key Capabilities](#key-capabilities)
+- [System Requirements](#system-requirements)
+- [Installation](#installation)
 - [Getting Started](#getting-started)
+- [Usage Guide](#usage-guide)
+- [Configuration Categories](#configuration-categories)
+  - [Scan Types](#scan-types)
+  - [Storage Sources](#storage-sources)
+  - [AI Analysis Tools](#ai-analysis-tools)
+  - [Comparison & Resolution](#comparison--resolution)
+  - [Settings](#settings)
+- [Generated Output & Data Flow](#generated-output--data-flow)
 - [Project Structure](#project-structure)
-- [Pages & Routes](#pages--routes)
-- [AI Analysis Modalities](#ai-analysis-modalities)
-- [Configuration](#configuration)
-- [Scripts](#scripts)
-- [License](#license)
+- [Technology Stack](#technology-stack)
+- [API Configuration](#api-configuration)
+- [Troubleshooting](#troubleshooting)
+- [Best Practices](#best-practices)
 
-## Features
+## Overview
 
-- **Multi-type duplicate scanning** — Scan for duplicate videos, images, or documents across all connected storage sources in a single workflow.
-- **Cross-storage support** — Connect local drives, NAS devices, Google Drive, Dropbox, and OneDrive with SSO authentication.
-- **AI-powered content analysis** — Goes beyond simple checksums by using perceptual hashing, audio fingerprinting, scene embeddings, face clustering, object tagging, and text similarity.
-- **Side-by-side comparison** — Compare duplicate pairs with detailed metadata diffs. Includes pixel-level diff overlay for images and inline text diff for documents.
-- **AI Analyzer tools** — Upload images or videos for analysis with custom prompts using Google Gemini. Includes a web-grounded search tool for real-time information retrieval.
-- **Video metadata enrichment** — Automatically identify videos using AI frame analysis, then enrich metadata (title, plot, actors, genre) from online databases via Google Search grounding.
-- **Interactive dashboard** — Overview of scan statistics with filters by file type (videos, images, documents) and a recent activity feed.
-- **Configurable detection engine** — Adjust similarity thresholds, required matching modalities, parallel worker count, and GPU acceleration settings.
-- **Reference database management** — Manage metadata enrichment sources (IMDb, TMDb, TVDB) and discover new sources using AI-powered search.
-- **Responsive UI** — Collapsible sidebar navigation with full mobile support. Built with Tailwind CSS and a dark slate theme.
+AstraDup is designed to help teams reduce duplicate media across local drives, NAS devices, and cloud providers. It goes beyond basic file hashing by combining multi-modal signals (hashes, embeddings, and metadata) with AI-assisted enrichment to identify real duplicates, even when files are re-encoded, renamed, or lightly edited.
 
-## Supported Storage Sources
+Core workflow:
 
-| Source | Type | Connection |
-|---|---|---|
-| Local Drive | Local | Auto-detected |
-| NAS | Network | Auto-detected |
-| Google Drive | Cloud | SSO authentication |
-| Dropbox | Cloud | SSO authentication |
-| OneDrive | Cloud | SSO authentication |
+1. Select the file type to scan (video, image, or document).
+2. Choose storage sources to include in the scan.
+3. Review duplicates, compare files side-by-side, and decide what to keep.
+4. Use AI tools to enrich metadata or analyze content when needed.
 
-Additional cloud providers (AWS S3, Google Cloud Storage, Azure Blob) are defined in the type system for future expansion.
+## Key Capabilities
 
-## Supported File Types
+- **Multi-type scans**: Separate flows for videos, images, and documents.
+- **Cross-storage coverage**: Local drives, NAS, and popular cloud providers.
+- **Duplicate comparison**: Side-by-side detail views with similarity signals.
+- **AI Analyzer**: Image, video, and web analysis backed by Gemini models.
+- **Metadata enrichment**: Suggested titles, plots, genres, and actors for videos.
+- **Operational safeguards**: Confirmation dialogs before destructive actions.
 
-### Videos
-Analyzed using perceptual hashing (pHash), difference hashing (dHash), scene embeddings, audio fingerprinting, and face clustering. Supports metadata enrichment via AI and web search.
+## System Requirements
 
-### Images
-Analyzed using perceptual hashing, difference hashing, EXIF data comparison, and AI object tagging. Comparison view supports pixel-level diff overlay.
+- **Node.js**: 18.x or higher
+- **Modern browser**: Latest Chrome, Edge, Firefox, or Safari
+- **API key**: Required for Gemini-powered analysis features
 
-### Documents
-Analyzed using text hashing, keyword density analysis, and cosine similarity. Comparison view supports inline text diff highlighting.
+## Installation
 
-## Tech Stack
-
-| Technology | Purpose |
-|---|---|
-| [React 19](https://react.dev) | UI framework |
-| [TypeScript 5.8](https://www.typescriptlang.org) | Type safety |
-| [Vite 6](https://vitejs.dev) | Build tool & dev server |
-| [Tailwind CSS](https://tailwindcss.com) | Utility-first styling |
-| [React Router 6](https://reactrouter.com) | Client-side routing |
-| [Google Gemini AI](https://ai.google.dev) | Image/video analysis, web-grounded search, metadata enrichment |
-
-## Getting Started
-
-### Prerequisites
-
-- [Node.js](https://nodejs.org) (v18 or later recommended)
-- A [Google Gemini API key](https://ai.google.dev)
-
-### Installation
-
-1. **Clone the repository:**
-
+1. **Clone the repository**
    ```bash
-   git clone https://github.com/samueljackson-collab/AstraDup-Cross-Storage-Video-Files-duplication-tracker.git
-   cd AstraDup-Cross-Storage-Video-Files-duplication-tracker
+   git clone https://github.com/samueljackson-collab/AstraDup-Cross-Storage-Video-Files-duplication-tracker.git astra-dup
+   cd astra-dup
    ```
 
-2. **Install dependencies:**
-
+2. **Install dependencies**
    ```bash
    npm install
    ```
 
-3. **Configure environment variables:**
+3. **Configure API key**
 
    Create a `.env.local` file in the project root:
-
+   ```bash
+   GEMINI_API_KEY=your_api_key_here
    ```
-   GEMINI_API_KEY=your_gemini_api_key_here
-   ```
 
-4. **Start the development server:**
-
+4. **Run the app**
    ```bash
    npm run dev
    ```
 
-   The app will be available at [http://localhost:3000](http://localhost:3000).
+5. **Open your browser** at the URL shown in the terminal (typically `http://localhost:3000`).
+
+### Production Build
+
+```bash
+npm run build
+```
+
+Preview the production build:
+
+```bash
+npm run preview
+```
+
+## Getting Started
+
+### Quick Start
+
+1. Open the app and go to **Duplicate Scan**.
+2. Pick **Videos**, **Images**, or **Documents**.
+3. Select storage sources to scan (local, NAS, or cloud).
+4. Start the scan and review duplicate sets.
+5. Compare pairs and decide which file to keep.
+
+### Example Workflow
+
+**Goal**: Clean up duplicate videos across a NAS and Google Drive.
+
+1. Go to **Duplicate Scan** → select **Videos**.
+2. Choose **NAS** and **Google Drive** as sources.
+3. Start the scan and wait for results.
+4. Use the comparison view to inspect metadata and similarity signals.
+5. Keep the best-quality version and remove the rest.
+
+## Usage Guide
+
+### Interface Overview
+
+- **Dashboard**: Snapshot of scan statistics and recent activity.
+- **Duplicate Scan**: Step-by-step scan flow (type → sources → scan → results).
+- **Comparison**: Deep dive into a specific duplicate pair with side-by-side details.
+- **AI Analyzer**: Standalone image, video, and web analysis tools.
+- **Settings**: Configure detection thresholds, performance, and metadata sources.
+
+### Duplicate Scan Flow
+
+1. **Select File Type**: Videos, images, or documents.
+2. **Choose Storage Sources**: Toggle local, NAS, and cloud providers.
+3. **Run Scan**: Progress and estimated time remaining are displayed.
+4. **Review Results**: Inspect duplicate pairs and navigate to file details.
+
+### AI Analyzer
+
+- **Image Analysis**: Upload a still image and ask questions about its content.
+- **Video Analysis**: Upload a video, extract frames, and summarize its contents.
+- **Web Analysis**: Ask a question and retrieve grounded web results.
+
+## Configuration Categories
+
+### Scan Types
+
+| Type | Focus | Typical Signals |
+|------|-------|-----------------|
+| Video | Video files | pHash, dHash, scene embeddings, audio fingerprint, face clusters |
+| Image | Photo files | pHash, dHash, EXIF metadata, object tags |
+| Document | PDF/doc files | Text hash, keyword density, content similarity |
+
+### Storage Sources
+
+| Source | Description |
+|--------|-------------|
+| Local Drive | Files stored on the current device |
+| NAS | Network-attached storage shares |
+| Google Drive | Cloud drive integration |
+| Dropbox | Cloud storage integration |
+| OneDrive | Microsoft cloud storage integration |
+
+### AI Analysis Tools
+
+| Tool | Description |
+|------|-------------|
+| Image Analysis | Gemini-powered image understanding with custom prompts |
+| Video Analysis | Frame-based Gemini analysis for summaries and tags |
+| Web Analysis | Grounded search queries for real-time answers |
+
+### Comparison & Resolution
+
+- Side-by-side details: resolution, codec, duration, size, and metadata.
+- Similarity signals with confidence meters.
+- Keep/delete actions with confirmation prompts.
+
+### Settings
+
+- **Similarity threshold**: Minimum confidence score for duplicates.
+- **Matching modalities**: Required number of matching signals.
+- **Parallel workers**: Controls scan throughput.
+- **GPU acceleration**: Toggle for accelerated analysis.
+- **Reference databases**: Manage metadata sources (IMDb, TMDb, custom APIs).
+
+## Generated Output & Data Flow
+
+AstraDup is currently front-end only and uses a mocked API layer for demo purposes. Scans, file details, and duplicate pairs are simulated so the UI workflow can be exercised without connecting to real storage backends.
+
+- **Mock data** is defined in `services/api.ts` and returned with simulated delays.
+- **AI requests** call Gemini models via `services/gemini.ts`.
+- **Delete actions** in the comparison view are UX-only (no real file operations).
 
 ## Project Structure
 
 ```
-.
-├── components/
-│   ├── Button.tsx              # Reusable button component
-│   ├── DuplicateResultDisplay.tsx  # Scan result cards with comparison links
-│   ├── FilePreview.tsx         # File preview component
-│   ├── FileTypeIcons.tsx       # SVG icons for video/image/document types
-│   ├── Icons.tsx               # General SVG icon components
-│   ├── Layout.tsx              # App shell with sidebar and header
-│   ├── Spinner.tsx             # Loading spinner
-│   └── StorageSelector.tsx     # Storage source picker with SSO connect
-├── pages/
-│   ├── AnalyzerPage.tsx        # AI image/video/web analyzer tools
-│   ├── ComparisonPage.tsx      # Side-by-side duplicate comparison
-│   ├── Dashboard.tsx           # Overview stats and activity feed
-│   ├── FileDetail.tsx          # File detail view (images & documents)
-│   ├── ScanPage.tsx            # Duplicate scan workflow
-│   ├── Settings.tsx            # Detection, performance & database settings
-│   └── VideoDetail.tsx         # Video-specific detail view with enrichment
-├── services/
-│   ├── api.ts                  # Mock API layer with sample data
-│   └── gemini.ts               # Google Gemini AI integration
-├── App.tsx                     # Root component with route definitions
-├── index.tsx                   # React DOM entry point
-├── types.ts                    # TypeScript type definitions
-├── index.html                  # HTML template with Tailwind CDN
-├── vite.config.ts              # Vite configuration
-├── tsconfig.json               # TypeScript configuration
-└── package.json                # Dependencies and scripts
+astra-dup/
+├── App.tsx                 # App routes
+├── index.tsx               # App entry point
+├── index.html              # HTML template
+├── metadata.json           # App metadata
+├── pages/                  # Route-level pages
+│   ├── Dashboard.tsx
+│   ├── ScanPage.tsx
+│   ├── ComparisonPage.tsx
+│   ├── AnalyzerPage.tsx
+│   ├── Settings.tsx
+│   ├── FileDetail.tsx
+│   └── VideoDetail.tsx
+├── components/             # Shared UI components
+├── services/               # Mock API + Gemini integration
+└── types.ts                # Shared type definitions
 ```
 
-## Pages & Routes
+## Technology Stack
 
-| Route | Page | Description |
-|---|---|---|
-| `/` | Dashboard | Overview stats, file type filters, and recent activity |
-| `/scan` | Duplicate Scan | Step-by-step scan workflow: select file type, choose storage sources, run scan, view results |
-| `/analyzer` | AI Analyzer | Three tools: image analysis, video frame analysis, and web-grounded search — all powered by Gemini |
-| `/file/:fileId` | File Detail | Detailed view with tabs for properties, AI analysis signals, and linked duplicates |
-| `/compare/:fileId1/:fileId2` | Comparison | Side-by-side duplicate comparison with metadata diffs, pixel diff (images), and text diff (documents) |
-| `/settings` | Settings | Configure similarity threshold, matching modalities, parallel workers, GPU acceleration, and reference databases |
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| React            | 18.x   | UI framework              |
+| TypeScript       | 5.x    | Type safety               |
+| Vite             | 5.x    | Build tool and dev server |
+| Google GenAI SDK | latest | Gemini API integration    |
+| React Router     | 6.23.x | Routing                   |
 
-## AI Analysis Modalities
+## API Configuration
 
-AstraDup uses multiple analysis signals to determine content similarity:
+AstraDup uses Gemini models for AI analysis and enrichment. Provide an API key via environment variables:
 
-| Modality | File Types | Description |
-|---|---|---|
-| **Perceptual Hash (pHash)** | Video, Image | Content-based hash resilient to re-encoding and resizing |
-| **Difference Hash (dHash)** | Video, Image | Gradient-based hash for structural comparison |
-| **Scene Embeddings** | Video | Neural network embeddings of key video scenes |
-| **Audio Fingerprint** | Video | Acoustic fingerprint matching (e.g., Chromaprint) |
-| **Face Clusters** | Video | Number of distinct face clusters detected |
-| **Object Tags** | Image | AI-detected objects and scene labels |
-| **EXIF Comparison** | Image | Camera model, timestamp, and ISO matching |
-| **Text Hash** | Document | Content hash of extracted text |
-| **Keyword Density** | Document | Term frequency analysis |
-| **Cosine Similarity** | Document | Vector-space text similarity scoring |
+```bash
+# .env.local
+GEMINI_API_KEY=your-api-key-here
+```
 
-Each modality reports a **confidence score** (0-100%), and duplicates are identified when the configured number of modalities exceed the similarity threshold.
+If the key is missing, the UI will still load, but AI analysis requests will fail.
 
-## Configuration
+## Troubleshooting
 
-Settings are available via the in-app Settings page (`/settings`):
+### Common Issues
 
-### Detection
-- **Similarity Threshold** — Minimum confidence score (75-99%) to flag a pair as duplicate. Default: 95%.
-- **Matching Modalities** — Minimum number of matching signals required. Default: 3.
+**"GEMINI_API_KEY environment variable not set"**
+- Ensure `.env.local` exists in the project root.
+- Confirm the variable name is `GEMINI_API_KEY`.
+- Restart the dev server after editing the file.
 
-### Performance
-- **Parallel Workers** — Number of files processed simultaneously. Default: 4.
-- **GPU Acceleration** — Enable GPU for faster embedding generation (requires compatible hardware). Default: on.
+**AI analysis fails**
+- Validate your API key and network connectivity.
+- Confirm the Gemini model is available to your account.
 
-### Reference Databases
-- Built-in sources: IMDb, TMDb, TVDB
-- AI-powered database discovery using web search
-- Manual custom source addition
+**No scan results**
+- The current implementation uses mock data; results are simulated.
+- Replace `services/api.ts` with real backend integrations to scan live data.
 
-## Scripts
+**Upload errors in the Analyzer**
+- Ensure the file type matches the selected tool.
+- For videos, verify the browser can decode the file format.
 
-| Command | Description |
-|---|---|
-| `npm run dev` | Start the Vite development server on port 3000 |
-| `npm run build` | Create a production build in `dist/` |
-| `npm run preview` | Preview the production build locally |
+## Best Practices
+
+- **Validate before deleting**: Always review both files in the comparison view.
+- **Use AI enrichment**: Add titles and metadata before archiving.
+- **Start small**: Run scans on one storage source before combining multiple.
+- **Plan integrations**: When connecting real storage, add audit logs and rollback safeguards.
+
+---
 
 ## License
 
-This project is provided as-is for educational and personal use.
+This project is provided as-is for deduplication and storage management workflows.
+
+## Contributing
+
+Contributions are welcome. Please keep documentation updated with any UI or workflow changes.
