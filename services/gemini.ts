@@ -84,3 +84,15 @@ export const groundedQuery = async (prompt: string): Promise<GenerateContentResp
 
     return response;
 };
+
+/**
+ * Summarizes a given block of text.
+ */
+export const summarizeText = async (text: string): Promise<GenerateContentResponse> => {
+    const prompt = `Summarize the following text into a concise paragraph:\n\n---\n${text}\n---`;
+    const response = await ai.models.generateContent({
+        model: 'gemini-3-flash-preview',
+        contents: prompt,
+    });
+    return response;
+};

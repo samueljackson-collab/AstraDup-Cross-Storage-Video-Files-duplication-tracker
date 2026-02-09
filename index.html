@@ -8,17 +8,37 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
       body {
-        background-color: #020617; /* slate-950 */
-        color: #f8fafc; /* slate-50 */
+        background-color: #000000; /* black */
+        color: #32CD32; /* limegreen */
+      }
+      /* Custom scrollbar for a more thematic feel */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #000;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #166534; /* green-800 */
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #22c55e; /* green-500 */
+      }
+      /* Text glow for headers and key elements */
+      h1, h2, h3, h4, .text-glow {
+        text-shadow: 0 0 4px rgba(50, 205, 50, 0.6), 0 0 8px rgba(50, 205, 50, 0.4);
       }
     </style>
   <script type="importmap">
 {
   "imports": {
-    "react-router-dom": "https://esm.sh/react-router-dom@6.23.1",
     "@google/genai": "https://esm.sh/@google/genai",
     "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-    "react/": "https://esm.sh/react@^19.2.4/"
+    "react/": "https://esm.sh/react@^19.2.4/",
+    "react": "https://esm.sh/react@^19.2.4",
+    "react-router-dom": "https://esm.sh/react-router-dom@^7.13.0"
   }
 }
 </script>

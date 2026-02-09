@@ -37,7 +37,7 @@ const StorageSelector: React.FC<StorageSelectorProps> = ({ sources, cloudSourceT
             key={source.id}
             onClick={handleClick}
             className={`relative flex flex-col items-center justify-between p-4 rounded-lg border-2 transition-all duration-200 text-center h-40
-              ${isSelected ? 'bg-indigo-900/50 border-indigo-500 text-white shadow-lg shadow-indigo-900/20' : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-600 hover:text-slate-200'}
+              ${isSelected ? 'bg-green-900/50 border-green-500 text-green-300 shadow-lg shadow-green-900/50' : 'bg-black border-green-800 text-green-600 hover:border-green-600 hover:text-green-400'}
               ${(isCloud && !isConnected) ? 'cursor-default' : 'cursor-pointer'}
             `}
           >
@@ -48,8 +48,8 @@ const StorageSelector: React.FC<StorageSelectorProps> = ({ sources, cloudSourceT
                  </div>
             )}
             <div className="flex flex-col items-center justify-center flex-grow">
-                <source.icon className={`h-10 w-10 mb-2 transition-colors ${isSelected ? 'text-indigo-400' : 'text-slate-500'}`} />
-                <span className="text-sm font-medium">{source.name}</span>
+                <source.icon className={`h-10 w-10 mb-2 transition-colors ${isSelected ? 'text-green-400' : 'text-green-700'}`} />
+                <span className="text-base font-semibold">{source.name}</span>
             </div>
 
             {isCloud && !isConnected && (

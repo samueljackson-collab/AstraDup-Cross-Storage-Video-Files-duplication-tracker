@@ -76,6 +76,7 @@ export interface DocumentFile extends BaseFile {
     pageCount: number;
     wordCount: number;
     author: string;
+    content: string;
     analysis: {
         textHash: AnalysisModality<string>;
         keywordDensity: AnalysisModality<Record<string, number>>;

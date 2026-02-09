@@ -30,10 +30,12 @@ const MOCK_FILES: { [key: string]: AnyFile } = {
     // Documents
     'doc1': {
         id: 'doc1', fileType: 'document', name: 'Project_Proposal_Final.pdf', path: '/nas/work/projects/Project_Proposal_Final.pdf', sizeMB: 2, pageCount: 15, wordCount: 3500, author: 'Jane Doe', thumbnailUrl: 'https://picsum.photos/seed/doc1/400/225',
+        content: "Project AstraDup: A proposal to leverage multi-modal AI for cross-storage video de-duplication. This document outlines the project's scope, objectives, and technical approach. The system will analyze video content using perceptual hashes, audio fingerprints, and scene embeddings to identify duplicates regardless of format or resolution changes. The primary goal is to reclaim significant storage space across heterogeneous environments including local drives, NAS, and cloud buckets.",
         analysis: { textHash: { value: 'a1b2c3d4e5f6...', confidence: 100 }, keywordDensity: { value: { 'synergy': 12, 'blockchain': 8 }, confidence: 90 } }
     },
     'doc2': {
         id: 'doc2', fileType: 'document', name: 'Project_Proposal_v1.2.docx', path: '/local/documents/archive/Project_Proposal_v1.2.docx', sizeMB: 1.8, pageCount: 15, wordCount: 3450, author: 'Jane Doe', thumbnailUrl: 'https://picsum.photos/seed/doc2/400/225',
+        content: "Project Proposal: AstraDup. Version 1.2. This proposal details the implementation of an advanced de-duplication system for video files. By employing AI-driven analysis of visual and audio streams, AstraDup aims to identify and flag redundant video files across diverse storage platforms. Key deliverables include a user-friendly interface for reviewing duplicates and a robust backend for processing large media libraries. This initiative promises substantial storage optimization and improved media management.",
         analysis: { textHash: { value: 'a1b2c3d4e5f6...', confidence: 99 }, keywordDensity: { value: { 'synergy': 11, 'blockchain': 8 }, confidence: 88 } }
     }
 };

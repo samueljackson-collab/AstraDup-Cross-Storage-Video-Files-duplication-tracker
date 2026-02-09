@@ -8,26 +8,26 @@ import Button from '../components/Button';
 import { FilmIcon, PhotoIcon, DocumentTextIcon } from '../components/FileTypeIcons';
 
 const StatCard: React.FC<{ title: string; value: string | number; unit?: string; description: string; }> = ({ title, value, unit, description }) => (
-  <div className="bg-slate-900 border border-slate-800 rounded-lg p-6">
-    <h3 className="text-sm font-medium text-slate-400">{title}</h3>
-    <p className="mt-2 text-3xl font-bold text-white">
+  <div className="bg-black border border-green-800 rounded-lg p-6">
+    <h3 className="text-base font-semibold text-green-600">{title}</h3>
+    <p className="mt-2 text-4xl font-extrabold text-green-400">
       {value}
-      {unit && <span className="text-lg font-medium text-slate-400 ml-1">{unit}</span>}
+      {unit && <span className="text-xl font-semibold text-green-600 ml-1">{unit}</span>}
     </p>
-    <p className="mt-1 text-xs text-slate-500">{description}</p>
+    <p className="mt-1 text-sm text-green-700">{description}</p>
   </div>
 );
 
 const ActivityItem: React.FC<{ fileType: FileType, fileName: string, action: string, time: string }> = ({ fileType, fileName, action, time }) => {
     const Icon = { video: FilmIcon, image: PhotoIcon, document: DocumentTextIcon}[fileType];
-    const color = { video: 'text-rose-400', image: 'text-teal-400', document: 'text-sky-400'}[fileType];
+    const color = 'text-green-400';
     return (
-        <div className="flex items-center p-3 hover:bg-slate-800/50 rounded-md">
+        <div className="flex items-center p-3 hover:bg-green-900/20 rounded-md">
             <Icon className={`h-5 w-5 mr-4 ${color}`} />
             <div className="flex-grow">
-                <p className="text-sm text-white"><span className="font-semibold">{fileName}</span> {action}</p>
+                <p className="text-base text-green-400"><span className="font-bold">{fileName}</span> {action}</p>
             </div>
-            <p className="text-xs text-slate-500">{time}</p>
+            <p className="text-sm text-green-700">{time}</p>
         </div>
     );
 }
@@ -74,14 +74,14 @@ const Dashboard: React.FC = () => {
   };
 
   if (loading) return <div className="flex justify-center items-center h-full"><Spinner /></div>;
-  if (!stats) return <div className="text-center text-slate-400">Failed to load dashboard data.</div>;
+  if (!stats) return <div className="text-center text-green-600">Failed to load dashboard data.</div>;
 
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
         <div>
-            <h1 className="text-3xl font-bold tracking-tight text-white">Dashboard</h1>
-            <p className="text-slate-400 mt-1">Welcome back! Here's a summary of your library.</p>
+            <h1 className="text-4xl font-extrabold tracking-tight text-green-400">Dashboard</h1>
+            <p className="text-green-600 mt-1 text-lg">Welcome back! Here's a summary of your library.</p>
         </div>
       </div>
       
@@ -97,9 +97,9 @@ const Dashboard: React.FC = () => {
       </div>
 
       <div className="mt-10 grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="bg-slate-900 border border-slate-800 rounded-lg p-6">
-            <h2 className="text-lg font-semibold text-white mb-4">Welcome to AstraDup</h2>
-            <p className="text-slate-400 text-sm">
+          <div className="bg-black border border-green-800 rounded-lg p-6">
+            <h2 className="text-xl font-bold text-green-400 mb-4">Welcome to AstraDup</h2>
+            <p className="text-green-600 text-base">
               AstraDup helps you find and manage duplicate videos, images, and documents across all your storage locations. 
               Unlike simple file hash checks, it uses advanced AI to understand the content of your files, 
               finding duplicates even if they have been re-encoded, renamed, or edited.
@@ -107,8 +107,8 @@ const Dashboard: React.FC = () => {
               To get started, click the "Start New Scan" button to select a file type and your storage sources to begin the analysis.
             </p>
           </div>
-           <div className="bg-slate-900 border border-slate-800 rounded-lg p-6">
-            <h2 className="text-lg font-semibold text-white mb-4">Recent Activity</h2>
+           <div className="bg-black border border-green-800 rounded-lg p-6">
+            <h2 className="text-xl font-bold text-green-400 mb-4">Recent Activity</h2>
             <div className="space-y-2">
                 <ActivityItem fileType="video" fileName="vacation_beach.mp4" action="was deleted." time="2h ago" />
                 <ActivityItem fileType="image" fileName="sunset_coast.jpg" action="metadata was enriched." time="5h ago" />

@@ -31,12 +31,12 @@ const Dropzone: React.FC<{ onDrop: (file: File) => void; accept: string; fileTyp
         <label
             onDragOver={handleDragOver}
             onDrop={handleDrop}
-            className="flex flex-col items-center justify-center w-full h-64 border-2 border-slate-700 border-dashed rounded-lg cursor-pointer bg-slate-900/50 hover:bg-slate-800/50 transition-colors"
+            className="flex flex-col items-center justify-center w-full h-64 border-2 border-green-700 border-dashed rounded-lg cursor-pointer bg-black/50 hover:bg-green-900/20 transition-colors"
         >
-            <div className="flex flex-col items-center justify-center pt-5 pb-6 text-slate-400">
+            <div className="flex flex-col items-center justify-center pt-5 pb-6 text-green-600">
                 <UploadCloudIcon className="w-10 h-10 mb-3" />
-                <p className="mb-2 text-sm"><span className="font-semibold text-indigo-400">Click to upload</span> or drag and drop</p>
-                <p className="text-xs">Your {fileType} file</p>
+                <p className="mb-2 text-base"><span className="font-semibold text-green-400">Click to upload</span> or drag and drop</p>
+                <p className="text-sm">Your {fileType} file</p>
             </div>
             <input type="file" className="hidden" accept={accept} onChange={handleFileChange} />
         </label>
@@ -46,20 +46,20 @@ const Dropzone: React.FC<{ onDrop: (file: File) => void; accept: string; fileTyp
 const ResultDisplay: React.FC<{ result: GenerateContentResponse | null; error?: string }> = ({ result, error }) => {
     const sources = result?.candidates?.[0]?.groundingMetadata?.groundingChunks;
     return (
-        <div className="bg-slate-900 border border-slate-800 rounded-lg p-5 mt-4 min-h-[10rem]">
+        <div className="bg-black border border-green-800 rounded-lg p-5 mt-4 min-h-[10rem]">
             {error ? (
                 <p className="text-red-400">{error}</p>
             ) : result ? (
                 <>
-                    <p className="text-white whitespace-pre-wrap font-sans">{result.text}</p>
+                    <p className="text-green-400 whitespace-pre-wrap font-mono text-base">{result.text}</p>
                     {sources && sources.length > 0 && (
-                         <div className="mt-6 border-t border-slate-700 pt-4">
-                            <h4 className="text-sm font-semibold text-slate-300 mb-2">Sources:</h4>
+                         <div className="mt-6 border-t border-green-800 pt-4">
+                            <h4 className="text-base font-bold text-green-500 mb-2">Sources:</h4>
                             <ul className="space-y-2">
                                 {sources.map((source: any, index: number) => (
                                     source.web && (
-                                        <li key={index} className="text-xs">
-                                            <a href={source.web.uri} target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline truncate block">
+                                        <li key={index} className="text-sm">
+                                            <a href={source.web.uri} target="_blank" rel="noopener noreferrer" className="text-green-400 hover:underline truncate block">
                                                {source.web.title || source.web.uri}
                                             </a>
                                         </li>
@@ -70,7 +70,7 @@ const ResultDisplay: React.FC<{ result: GenerateContentResponse | null; error?: 
                     )}
                 </>
             ) : (
-                <p className="text-slate-500">AI response will appear here...</p>
+                <p className="text-green-700 text-base">AI response will appear here...</p>
             )}
         </div>
     );
@@ -108,12 +108,12 @@ const ImageAnalyzer = () => {
                 {file && <Button variant="secondary" className="w-full mt-2" onClick={() => setFile(null)}>Clear Image</Button>}
             </div>
             <div>
-                <h3 className="text-lg font-semibold text-white mb-2">Your Prompt</h3>
+                <h3 className="text-xl font-bold text-green-400 mb-2">Your Prompt</h3>
                 <textarea
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
                     rows={4}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-md py-2 px-3 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                    className="w-full bg-black border border-green-700 rounded-md py-2 px-3 text-green-300 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none text-base"
                     placeholder="e.g., Describe this scene, what is the brand of the car?"
                 />
                 <Button onClick={handleSubmit} disabled={!file || !prompt || loading} className="w-full mt-4">
@@ -215,12 +215,12 @@ const VideoAnalyzer = () => {
                 {file && <Button variant="secondary" className="w-full mt-2" onClick={() => setFile(null)}>Clear Video</Button>}
             </div>
             <div>
-                <h3 className="text-lg font-semibold text-white mb-2">Your Prompt</h3>
+                <h3 className="text-xl font-bold text-green-400 mb-2">Your Prompt</h3>
                 <textarea
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
                     rows={4}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-md py-2 px-3 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                    className="w-full bg-black border border-green-700 rounded-md py-2 px-3 text-green-300 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none text-base"
                     placeholder="e.g., Summarize this video, what are the key objects?"
                 />
                 <Button onClick={handleSubmit} disabled={!file || !prompt || loading} className="w-full mt-4">
@@ -257,13 +257,13 @@ const WebAnalyzer = () => {
 
     return (
         <div>
-            <h3 className="text-lg font-semibold text-white mb-2">Ask a question</h3>
+            <h3 className="text-xl font-bold text-green-400 mb-2">Ask a question</h3>
              <div className="flex">
                 <input
                     type="text"
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
-                    className="flex-grow bg-slate-800 border border-slate-700 rounded-l-md py-2 px-3 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                    className="flex-grow bg-black border border-green-700 rounded-l-md py-2 px-3 text-green-300 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none text-base"
                     placeholder="Who won the last F1 race?"
                     onKeyUp={(e) => e.key === 'Enter' && handleSubmit()}
                 />
@@ -294,8 +294,8 @@ const AnalyzerPage: React.FC = () => {
     const TabButton: React.FC<{ tool: AnalyzerTool, label: string, icon: React.FC<any> }> = ({ tool, label, icon: Icon }) => (
         <button
             onClick={() => setActiveTool(tool)}
-            className={`flex items-center space-x-2 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                activeTool === tool ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'
+            className={`flex items-center space-x-2 px-4 py-2 text-base font-semibold rounded-md transition-colors ${
+                activeTool === tool ? 'bg-green-600 text-black font-bold' : 'text-green-600 hover:bg-green-900/20 hover:text-green-400'
             }`}
         >
             <Icon className="h-5 w-5" />
@@ -305,10 +305,10 @@ const AnalyzerPage: React.FC = () => {
 
     return (
         <div>
-            <h1 className="text-3xl font-bold tracking-tight text-white mb-2">AI Analyzer</h1>
-            <p className="text-slate-400 mb-8">Use generative AI to understand your media and get up-to-date information from the web.</p>
+            <h1 className="text-4xl font-extrabold tracking-tight text-green-400 mb-2">AI Analyzer</h1>
+            <p className="text-green-600 mb-8 text-lg">Use generative AI to understand your media and get up-to-date information from the web.</p>
             
-            <div className="flex space-x-2 border-b border-slate-800 mb-8 pb-4">
+            <div className="flex space-x-2 border-b border-green-800 mb-8 pb-4">
                 <TabButton tool="image" label="Image Analysis" icon={PhotoIcon} />
                 <TabButton tool="video" label="Video Analysis" icon={FilmIcon} />
                 <TabButton tool="web" label="Web Analysis" icon={GlobeIcon} />

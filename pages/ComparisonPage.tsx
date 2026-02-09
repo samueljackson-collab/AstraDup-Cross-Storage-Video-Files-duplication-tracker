@@ -11,29 +11,29 @@ import Button from '../components/Button';
 // --- Shared Components ---
 const DetailItem: React.FC<{ label: string; value: React.ReactNode; mono?: boolean, highlight?: boolean }> = ({ label, value, mono, highlight }) => (
   <div>
-    <dt className="text-xs font-medium text-slate-400">{label}</dt>
-    <dd className={`mt-1 text-xs ${mono ? 'font-mono' : ''} ${highlight ? 'text-amber-300 bg-amber-900/50 p-1 rounded' : 'text-white'}`}>{value}</dd>
+    <dt className="text-sm font-semibold text-green-600">{label}</dt>
+    <dd className={`mt-1 text-sm break-words ${mono ? 'font-mono' : ''} ${highlight ? 'text-green-300 bg-green-900/50 p-1 rounded' : 'text-green-400'}`}>{value}</dd>
   </div>
 );
 
 const AnalysisItem: React.FC<{ label: string; value?: React.ReactNode; confidence: number; mono?: boolean }> = ({ label, value, confidence, mono }) => {
-    const confidenceColor = confidence > 95 ? 'bg-green-500' : confidence > 85 ? 'bg-yellow-500' : 'bg-orange-500';
+    const confidenceColor = 'bg-green-500';
     return (
         <div>
             <div className="flex justify-between items-center mb-1">
-                <dt className="text-xs font-medium text-slate-400">{label}</dt>
-                <dd className="text-xs font-semibold text-white">{confidence}%</dd>
+                <dt className="text-sm font-semibold text-green-600">{label}</dt>
+                <dd className="text-sm font-bold text-green-400">{confidence}%</dd>
             </div>
-            <div className="w-full bg-slate-700 rounded-full h-1" title={`${confidence}% confidence`}><div className={`${confidenceColor} h-1 rounded-full`} style={{ width: `${confidence}%` }}></div></div>
-            {value && <div className={`mt-1.5 text-xs text-slate-300 truncate ${mono ? 'font-mono' : ''}`} title={typeof value === 'string' ? value : undefined}>{value}</div>}
+            <div className="w-full bg-green-900 rounded-full h-1" title={`${confidence}% confidence`}><div className={`${confidenceColor} h-1 rounded-full`} style={{ width: `${confidence}%` }}></div></div>
+            {value && <div className={`mt-1.5 text-sm text-green-500 truncate ${mono ? 'font-mono' : ''}`} title={typeof value === 'string' ? value : undefined}>{value}</div>}
         </div>
     );
 };
 
 const ActionPanel: React.FC<{ fileToKeep: AnyFile, fileToDelete: AnyFile, onDelete: (file: AnyFile) => void }> = ({ fileToKeep, fileToDelete, onDelete }) => {
     return (
-        <div className="bg-slate-900 border border-slate-800 rounded-lg p-3 mt-4 grid grid-cols-2 gap-3">
-             <Button variant="primary" className="text-xs bg-green-600 hover:bg-green-700 focus:ring-green-500">
+        <div className="bg-black border border-green-800 rounded-lg p-3 mt-4 grid grid-cols-2 gap-3">
+             <Button variant="primary" className="text-xs" onClick={() => onDelete(fileToDelete)}>
                 <CheckCircleIcon className="h-4 w-4 mr-2" />
                 Keep This
             </Button>
@@ -49,19 +49,19 @@ const ConfirmationModal: React.FC<{ file: AnyFile | null, onConfirm: () => void,
     if (!file) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-            <div className="bg-slate-900 border border-slate-700 rounded-lg shadow-xl max-w-md w-full p-6">
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+            <div className="bg-black border border-green-700 rounded-lg shadow-xl max-w-md w-full p-6">
                 <div className="flex items-start">
                     <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-900/50 sm:mx-0 sm:h-10 sm:w-10">
                         <TrashIcon className="h-6 w-6 text-red-400" />
                     </div>
                     <div className="ml-4 text-left">
-                        <h3 className="text-lg leading-6 font-medium text-white">Confirm Deletion</h3>
+                        <h3 className="text-xl leading-6 font-bold text-green-400">Confirm Deletion</h3>
                         <div className="mt-2">
-                            <p className="text-sm text-slate-400">Are you sure you want to permanently delete this file? This action cannot be undone.</p>
-                            <div className="mt-3 bg-slate-800 p-2 rounded text-xs">
-                                <p className="font-semibold text-white truncate">{file.name}</p>
-                                <p className="font-mono text-slate-500 truncate">{file.path}</p>
+                            <p className="text-base text-green-600">Are you sure you want to permanently delete this file? This action cannot be undone.</p>
+                            <div className="mt-3 bg-gray-900 p-2 rounded text-sm">
+                                <p className="font-bold text-green-400 truncate">{file.name}</p>
+                                <p className="font-mono text-green-700 truncate">{file.path}</p>
                             </div>
                         </div>
                     </div>
@@ -80,6 +80,8 @@ const ConfirmationModal: React.FC<{ file: AnyFile | null, onConfirm: () => void,
 };
 
 // --- Video Comparison ---
+const FILENAME_TEMPLATE = "{title} ({year})"; // In a real app, this would come from settings
+
 const EnrichmentPanel: React.FC<{ file: VideoFile }> = ({ file }) => {
     const [suggestions, setSuggestions] = useState<EnrichedVideoMetadata | null>(null);
     const [loading, setLoading] = useState(false);
@@ -203,15 +205,20 @@ const EnrichmentPanel: React.FC<{ file: VideoFile }> = ({ file }) => {
 
     const suggestedFilename = useMemo(() => {
         if (!suggestions) return '';
-        const datePart = suggestions.releaseDate ? `(${suggestions.releaseDate.split('-')[0]})` : '';
-        const cleanTitle = manualTitle.replace(/[^a-z0-9]/gi, '_').replace(/_+/g, '_');
-        return `${cleanTitle}${datePart}.mp4`;
-    }, [suggestions, manualTitle]);
+        const year = suggestions.releaseDate ? suggestions.releaseDate.split('-')[0] : 'N/A';
+        const cleanTitle = manualTitle.replace(/[^\w\s]/gi, '').replace(/\s+/g, '.');
+
+        return FILENAME_TEMPLATE
+            .replace('{title}', cleanTitle)
+            .replace('{year}', year)
+            .replace('{resolution}', file.resolution) // Assuming file is available
+            + '.mp4'; // Add extension
+    }, [suggestions, manualTitle, file.resolution]);
 
     if (isApplied) {
-        return <div className="bg-slate-900 border border-green-800 rounded-lg p-4 mt-4 text-center">
+        return <div className="bg-black border border-green-800 rounded-lg p-4 mt-4 text-center">
             <CheckCircleIcon className="h-8 w-8 text-green-500 mx-auto mb-2" />
-            <p className="text-sm font-semibold text-green-400">Metadata Updated!</p>
+            <p className="text-base font-bold text-green-400">Metadata Updated!</p>
         </div>
     }
 
@@ -219,41 +226,37 @@ const EnrichmentPanel: React.FC<{ file: VideoFile }> = ({ file }) => {
         <>
             <video ref={videoRef} src={file.videoUrl} className="hidden" crossOrigin="anonymous" preload="metadata" muted playsInline></video>
             <canvas ref={canvasRef} className="hidden"></canvas>
-            <div className={`bg-slate-900 border ${suggestions ? 'border-2 border-indigo-800' : 'border-slate-800'} rounded-lg p-4 mt-4`}>
+            <div className={`bg-black border ${suggestions ? 'border-2 border-green-600' : 'border-green-800'} rounded-lg p-4 mt-4`}>
                 {!suggestions ? (
                     <>
-                        <h3 className="text-md font-semibold text-white mb-2">Enrich Metadata</h3>
-                        <p className="text-xs text-slate-400 mb-4">Use AI to analyze the video and fetch rich metadata like title, plot, and actors from online databases.</p>
-                        {error && <p className="text-xs text-red-400 mb-4">{error}</p>}
+                        <h3 className="text-lg font-bold text-green-400 mb-2">Enrich Metadata</h3>
+                        <p className="text-sm text-green-600 mb-4">Use AI to analyze the video and fetch rich metadata like title, plot, and actors from online databases.</p>
+                        {error && <p className="text-sm text-red-400 mb-4">{error}</p>}
                         <Button onClick={handleEnrich} disabled={loading} className="w-full">
                             {loading ? <Spinner /> : 'Find & Suggest Metadata'}
                         </Button>
                     </>
                 ) : (
                     <>
-                        <h3 className="text-md font-semibold text-white mb-2">Enrichment Suggestions</h3>
-                        <p className="text-xs text-slate-400 mb-4">Review and apply suggested changes. Source: <a href={suggestions.source.url} target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline">{suggestions.source.name}</a></p>
-                        <div className="space-y-3 text-xs">
+                        <h3 className="text-lg font-bold text-green-400 mb-2">Enrichment Suggestions</h3>
+                        <p className="text-sm text-green-600 mb-4">Review and apply suggested changes. Source: <a href={suggestions.source.url} target="_blank" rel="noopener noreferrer" className="text-green-400 hover:underline">{suggestions.source.name}</a></p>
+                        <div className="space-y-3 text-sm">
                             <div>
-                                <label className="flex items-center"><input type="checkbox" checked={selectedChanges.title} onChange={e => setSelectedChanges({...selectedChanges, title: e.target.checked})} className="h-4 w-4 rounded bg-slate-700 border-slate-600 text-indigo-500 focus:ring-indigo-600" /> <span className="ml-2 text-slate-400">Title</span></label>
-                                <input type="text" value={manualTitle} onChange={e => setManualTitle(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md py-1 px-2 text-white mt-1 text-xs" />
+                                <label className="flex items-center"><input type="checkbox" checked={selectedChanges.title} onChange={e => setSelectedChanges({...selectedChanges, title: e.target.checked})} className="h-4 w-4 rounded bg-gray-900 border-green-700 text-green-500 focus:ring-green-500" /> <span className="ml-2 text-green-600">Title</span></label>
+                                <input type="text" value={manualTitle} onChange={e => setManualTitle(e.target.value)} className="w-full bg-black border border-green-700 rounded-md py-1 px-2 text-green-300 mt-1 text-sm" />
                             </div>
                             <div>
-                                <label className="flex items-center"><input type="checkbox" checked={selectedChanges.plot} onChange={e => setSelectedChanges({...selectedChanges, plot: e.target.checked})} className="h-4 w-4 rounded bg-slate-700 border-slate-600 text-indigo-500 focus:ring-indigo-600" /> <span className="ml-2 text-slate-400">Plot Summary</span></label>
-                                <p className="text-slate-300 mt-1 p-2 bg-slate-800/50 rounded">{suggestions.plot}</p>
+                                <label className="flex items-center"><input type="checkbox" checked={selectedChanges.plot} onChange={e => setSelectedChanges({...selectedChanges, plot: e.target.checked})} className="h-4 w-4 rounded bg-gray-900 border-green-700 text-green-500 focus:ring-green-500" /> <span className="ml-2 text-green-600">Plot Summary</span></label>
+                                <p className="text-green-500 mt-1 p-2 bg-green-900/20 rounded">{suggestions.plot}</p>
                             </div>
                             <div>
-                                <label className="flex items-center"><input type="checkbox" checked={selectedChanges.genre} onChange={e => setSelectedChanges({...selectedChanges, genre: e.target.checked})} className="h-4 w-4 rounded bg-slate-700 border-slate-600 text-indigo-500 focus:ring-indigo-600" /> <span className="ml-2 text-slate-400">Genre</span></label>
-                                <p className="text-slate-300 mt-1 p-2 bg-slate-800/50 rounded">{suggestions.genre}</p>
+                                <label className="flex items-center"><input type="checkbox" checked={selectedChanges.genre} onChange={e => setSelectedChanges({...selectedChanges, genre: e.target.checked})} className="h-4 w-4 rounded bg-gray-900 border-green-700 text-green-500 focus:ring-green-500" /> <span className="ml-2 text-green-600">Genre</span></label>
+                                <p className="text-green-500 mt-1 p-2 bg-green-900/20 rounded">{suggestions.genre}</p>
                             </div>
+                             <hr className="border-green-800" />
                             <div>
-                                <label className="flex items-center"><input type="checkbox" checked={selectedChanges.actors} onChange={e => setSelectedChanges({...selectedChanges, actors: e.target.checked})} className="h-4 w-4 rounded bg-slate-700 border-slate-600 text-indigo-500 focus:ring-indigo-600" /> <span className="ml-2 text-slate-400">Actors</span></label>
-                                <p className="text-slate-300 mt-1 p-2 bg-slate-800/50 rounded">{suggestions.actors.join(', ')}</p>
-                            </div>
-                            <hr className="border-slate-700" />
-                            <div>
-                                <label className="flex items-center"><input type="checkbox" checked={selectedChanges.rename} onChange={e => setSelectedChanges({...selectedChanges, rename: e.target.checked})} className="h-4 w-4 rounded bg-slate-700 border-slate-600 text-indigo-500 focus:ring-indigo-600" /> <span className="ml-2 text-slate-400">Suggest New Filename</span></label>
-                                <p className="text-indigo-300 mt-1 p-2 bg-slate-800/50 rounded font-mono break-all">{suggestedFilename}</p>
+                                <label className="flex items-center"><input type="checkbox" checked={selectedChanges.rename} onChange={e => setSelectedChanges({...selectedChanges, rename: e.target.checked})} className="h-4 w-4 rounded bg-gray-900 border-green-700 text-green-500 focus:ring-green-500" /> <span className="ml-2 text-green-600">Suggest New Filename</span></label>
+                                <p className="text-green-400 mt-1 p-2 bg-green-900/20 rounded font-mono break-all">{suggestedFilename}</p>
                             </div>
                         </div>
                         <Button onClick={handleApply} className="w-full mt-4">Confirm & Apply Changes</Button>
@@ -270,13 +273,13 @@ const VideoColumn: React.FC<{ file: VideoFile, original: VideoFile, onDelete: (f
             <video controls poster={file.thumbnailUrl} src={file.videoUrl} className="rounded-lg w-full aspect-video object-contain bg-black">
                 Your browser does not support the video tag.
             </video>
-            {file.resolution !== original.resolution && <span className="absolute top-2 right-2 bg-amber-900/80 text-amber-300 text-xs font-bold px-2 py-1 rounded-full">{file.resolution}</span>}
+            {file.resolution !== original.resolution && <span className="absolute top-2 right-2 bg-green-900/80 text-green-300 text-xs font-bold px-2 py-1 rounded-full">{file.resolution}</span>}
         </div>
-        <h2 className="text-xl font-bold text-white mt-4 truncate">{file.name}</h2>
-        <p className="text-xs text-slate-400 font-mono break-all">{file.path}</p>
+        <h2 className="text-2xl font-extrabold text-green-400 mt-4 truncate">{file.name}</h2>
+        <p className="text-sm text-green-600 font-mono break-all">{file.path}</p>
         <ActionPanel fileToKeep={file} fileToDelete={original} onDelete={onDelete} />
-        <div className="bg-slate-900 border border-slate-800 rounded-lg p-4 mt-4">
-            <h3 className="text-md font-semibold text-white border-b border-slate-800 pb-2 mb-3">File Metadata</h3>
+        <div className="bg-black border border-green-800 rounded-lg p-4 mt-4">
+            <h3 className="text-lg font-bold text-green-400 border-b border-green-800 pb-2 mb-3">File Metadata</h3>
             <dl className="grid grid-cols-2 gap-x-4 gap-y-4">
                 <DetailItem label="Size" value={`${file.sizeMB} MB`} highlight={file.sizeMB !== original.sizeMB} />
                 <DetailItem label="Duration" value={file.duration} mono highlight={file.duration !== original.duration} />
@@ -284,8 +287,16 @@ const VideoColumn: React.FC<{ file: VideoFile, original: VideoFile, onDelete: (f
                 <DetailItem label="Codec" value={file.codec} highlight={file.codec !== original.codec} />
             </dl>
         </div>
-        <div className="bg-slate-900 border border-slate-800 rounded-lg p-4 mt-4">
-            <h3 className="text-md font-semibold text-white border-b border-slate-800 pb-2 mb-3">AI Analysis</h3>
+         <div className="bg-black border border-green-800 rounded-lg p-4 mt-4">
+            <h3 className="text-lg font-bold text-green-400 border-b border-green-800 pb-2 mb-3">Enriched Data</h3>
+            <dl className="grid grid-cols-1 gap-y-4">
+                <DetailItem label="Title" value={file.enrichedData.title} highlight={file.enrichedData.title !== original.enrichedData.title} />
+                <DetailItem label="Plot" value={file.enrichedData.plot} highlight={file.enrichedData.plot !== original.enrichedData.plot} />
+                <DetailItem label="Genre" value={file.enrichedData.genre} highlight={file.enrichedData.genre !== original.enrichedData.genre} />
+            </dl>
+        </div>
+        <div className="bg-black border border-green-800 rounded-lg p-4 mt-4">
+            <h3 className="text-lg font-bold text-green-400 border-b border-green-800 pb-2 mb-3">AI Analysis</h3>
             <div className="space-y-4">
                 <AnalysisItem label="pHash" value={file.analysis.pHash.value} confidence={file.analysis.pHash.confidence} mono />
                 <AnalysisItem label="dHash" value={file.analysis.dHash.value} confidence={file.analysis.dHash.confidence} mono />
@@ -303,15 +314,15 @@ const ImageColumn: React.FC<{ file: ImageFile, original: ImageFile, onDelete: (f
     const hasExifDiff = file.resolution !== original.resolution || file.exif.cameraModel !== original.exif.cameraModel || file.exif.dateTaken !== original.exif.dateTaken || file.exif.iso !== original.exif.iso;
     return (
         <div className="w-full">
-            <div className={`relative rounded-lg overflow-hidden ${hasExifDiff ? 'border-2 border-amber-500/50' : ''}`}>
+            <div className={`relative rounded-lg overflow-hidden ${hasExifDiff ? 'border-2 border-green-500/50' : ''}`}>
                 <img src={file.thumbnailUrl} alt={file.name} className="w-full aspect-video object-contain bg-black" />
                 {showDiff && overlaySrc && <img src={overlaySrc} alt="diff" className="absolute top-0 left-0 w-full h-full aspect-video object-contain mix-blend-difference" />}
             </div>
-            <h2 className="text-xl font-bold text-white mt-4 truncate">{file.name}</h2>
-            <p className="text-xs text-slate-400 font-mono break-all">{file.path}</p>
+            <h2 className="text-2xl font-extrabold text-green-400 mt-4 truncate">{file.name}</h2>
+            <p className="text-sm text-green-600 font-mono break-all">{file.path}</p>
             <ActionPanel fileToKeep={file} fileToDelete={original} onDelete={onDelete} />
-            <div className="bg-slate-900 border border-slate-800 rounded-lg p-4 mt-4">
-                <h3 className="text-md font-semibold text-white border-b border-slate-800 pb-2 mb-3">EXIF Data</h3>
+            <div className="bg-black border border-green-800 rounded-lg p-4 mt-4">
+                <h3 className="text-lg font-bold text-green-400 border-b border-green-800 pb-2 mb-3">EXIF Data</h3>
                 <dl className="grid grid-cols-2 gap-x-4 gap-y-4">
                     <DetailItem label="Resolution" value={file.resolution} mono highlight={file.resolution !== original.resolution} />
                     <DetailItem label="Camera" value={file.exif.cameraModel} highlight={file.exif.cameraModel !== original.exif.cameraModel} />
@@ -319,8 +330,8 @@ const ImageColumn: React.FC<{ file: ImageFile, original: ImageFile, onDelete: (f
                     <DetailItem label="ISO" value={file.exif.iso} highlight={file.exif.iso !== original.exif.iso} />
                 </dl>
             </div>
-            <div className="bg-slate-900 border border-slate-800 rounded-lg p-4 mt-4">
-                <h3 className="text-md font-semibold text-white border-b border-slate-800 pb-2 mb-3">AI Analysis</h3>
+            <div className="bg-black border border-green-800 rounded-lg p-4 mt-4">
+                <h3 className="text-lg font-bold text-green-400 border-b border-green-800 pb-2 mb-3">AI Analysis</h3>
                 <div className="space-y-4">
                     <AnalysisItem label="pHash" value={file.analysis.pHash.value} confidence={file.analysis.pHash.confidence} mono />
                     <AnalysisItem label="dHash" value={file.analysis.dHash.value} confidence={file.analysis.dHash.confidence} mono />
@@ -333,12 +344,12 @@ const ImageColumn: React.FC<{ file: ImageFile, original: ImageFile, onDelete: (f
 
 // --- Document Comparison ---
 const DocumentColumn: React.FC<{ file: DocumentFile, original: DocumentFile, onDelete: (file: AnyFile) => void, showDiff: boolean }> = ({ file, original, onDelete, showDiff }) => (
-    <div className="w-full bg-slate-900 border border-slate-800 rounded-lg p-4 flex flex-col">
+    <div className="w-full bg-black border border-green-800 rounded-lg p-4 flex flex-col">
         <div className="flex justify-between items-start">
-            <h2 className="text-xl font-bold text-white truncate">{file.name}</h2>
-            {file.pageCount !== original.pageCount && <span className="flex-shrink-0 ml-2 bg-amber-900/80 text-amber-300 text-xs font-bold px-2 py-1 rounded-full">{file.pageCount} pages</span>}
+            <h2 className="text-2xl font-extrabold text-green-400 truncate">{file.name}</h2>
+            {file.pageCount !== original.pageCount && <span className="flex-shrink-0 ml-2 bg-green-900/80 text-green-300 text-sm font-bold px-2 py-1 rounded-full">{file.pageCount} pages</span>}
         </div>
-        <p className="text-xs text-slate-400 font-mono break-all mb-4">{file.path}</p>
+        <p className="text-sm text-green-600 font-mono break-all mb-4">{file.path}</p>
         <ActionPanel fileToKeep={file} fileToDelete={original} onDelete={onDelete} />
         <dl className="grid grid-cols-2 gap-x-4 gap-y-4 my-4">
             <DetailItem label="Size" value={`${file.sizeMB} MB`} highlight={file.sizeMB !== original.sizeMB} />
@@ -346,7 +357,7 @@ const DocumentColumn: React.FC<{ file: DocumentFile, original: DocumentFile, onD
             <DetailItem label="Word Count" value={file.wordCount} highlight={file.wordCount !== original.wordCount} />
             <DetailItem label="Author" value={file.author} highlight={file.author !== original.author} />
         </dl>
-        <div className="bg-slate-950 rounded-lg p-3 text-xs text-slate-300 flex-grow overflow-y-auto font-mono h-96">
+        <div className="bg-black rounded-lg p-3 text-sm text-green-500 flex-grow overflow-y-auto font-mono h-96">
            {showDiff ? (
             <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit... <span className="bg-red-900/50 text-red-300 line-through">Vestibulum ante ipsum primis in faucibus</span> orci luctus et ultrices posuere cubilia Curae; <span className="bg-green-900/50 text-green-300">This is an added sentence for clarity.</span> Donec velit neque, auctor sit amet aliquam vel, ullamcorper sit amet ligula. Curabitur arcu erat, accumsan id imperdiet et, porttitor at sem.</p>
            ) : (
@@ -391,20 +402,20 @@ const ComparisonPage: React.FC = () => {
     
     const [file1, file2] = files;
     if (!file1 || !file2 || file1.fileType !== file2.fileType) {
-        return <div className="text-center text-slate-400">Files for comparison could not be found or are of different types.</div>;
+        return <div className="text-center text-green-600">Files for comparison could not be found or are of different types.</div>;
     }
 
     const renderComparison = () => {
         switch (file1.fileType) {
             case 'video': return <>
                 <VideoColumn file={file1 as VideoFile} original={file2 as VideoFile} onDelete={handleDeleteRequest}/>
-                <div className="hidden md:flex items-center justify-center px-4"><div className="text-3xl font-bold text-slate-600">VS</div></div>
+                <div className="hidden md:flex items-center justify-center px-4"><div className="text-3xl font-bold text-green-800">VS</div></div>
                 <VideoColumn file={file2 as VideoFile} original={file1 as VideoFile} onDelete={handleDeleteRequest}/>
             </>;
             case 'image': return <>
                 <ImageColumn file={file1 as ImageFile} original={file2 as ImageFile} onDelete={handleDeleteRequest} showDiff={showPixelDiff} overlaySrc={file2.thumbnailUrl} />
                 <div className="hidden md:flex flex-col items-center justify-center px-4">
-                    <div className="text-3xl font-bold text-slate-600 mb-4">VS</div>
+                    <div className="text-3xl font-bold text-green-800 mb-4">VS</div>
                     <Button variant="secondary" className="text-xs" onClick={() => setShowPixelDiff(!showPixelDiff)}>{showPixelDiff ? 'Hide' : 'Show'} Pixel Diff</Button>
                 </div>
                 <ImageColumn file={file2 as ImageFile} original={file1 as ImageFile} onDelete={handleDeleteRequest}/>
@@ -412,7 +423,7 @@ const ComparisonPage: React.FC = () => {
             case 'document': return <>
                 <DocumentColumn file={file1 as DocumentFile} original={file2 as DocumentFile} onDelete={handleDeleteRequest} showDiff={showTextDiff} />
                  <div className="hidden lg:flex flex-col items-center justify-center px-4">
-                    <div className="text-3xl font-bold text-slate-600 mb-4">VS</div>
+                    <div className="text-3xl font-bold text-green-800 mb-4">VS</div>
                     <Button variant="secondary" className="text-xs" onClick={() => setShowTextDiff(!showTextDiff)}>{showTextDiff ? 'Hide' : 'Show'} Text Diff</Button>
                 </div>
                 <DocumentColumn file={file2 as DocumentFile} original={file1 as DocumentFile} onDelete={handleDeleteRequest} showDiff={showTextDiff} />
@@ -425,7 +436,7 @@ const ComparisonPage: React.FC = () => {
         <div>
             <ConfirmationModal file={confirmingDelete} onConfirm={handleConfirmDelete} onCancel={() => setConfirmingDelete(null)} />
             <Button variant="secondary" onClick={() => navigate(-1)} className="mb-6"><ArrowLeftIcon className="h-4 w-4 mr-2" />Back</Button>
-            <h1 className="text-3xl font-bold tracking-tight text-white mb-8 capitalize">{file1.fileType} Duplicate Comparison</h1>
+            <h1 className="text-4xl font-extrabold tracking-tight text-green-400 mb-8 capitalize">{file1.fileType} Duplicate Comparison</h1>
             <div className={`flex flex-col ${file1.fileType === 'document' ? 'lg:flex-row' : 'md:flex-row'} gap-8`}>
                 {renderComparison()}
             </div>

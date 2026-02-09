@@ -19,18 +19,81 @@ const ALL_STORAGE_SOURCES: StorageSource[] = [
     { id: 'onedrive', name: 'OneDrive', type: 'OneDrive', icon: OneDriveIcon },
 ];
 
+const METADATA_DATABASES = [
+    { id: 'imdb', name: 'IMDb' },
+    { id: 'tmdb', name: 'The Movie Database (TMDb)' },
+    { id: 'tvdb', name: 'The TVDB' },
+];
+
+
 const CLOUD_SOURCE_TYPES: Array<StorageSource['type']> = ['Google Drive', 'Dropbox', 'OneDrive', 'S3', 'GCS', 'Azure'];
 
 const ScanTypeCard: React.FC<{ title: string; icon: React.FC<React.SVGProps<SVGSVGElement>>; onClick: () => void }> = ({ title, icon: Icon, onClick }) => (
     <button
         onClick={onClick}
-        className="flex flex-col items-center justify-center p-8 rounded-lg border-2 transition-all duration-200 text-center bg-slate-900 border-slate-800 text-slate-400 hover:border-indigo-500 hover:text-white group"
+        className="flex flex-col items-center justify-center p-8 rounded-lg border-2 transition-all duration-200 text-center bg-black border-green-800 text-green-600 hover:border-green-500 hover:text-green-400 group"
     >
-        <Icon className="h-16 w-16 mb-4 text-slate-500 group-hover:text-indigo-400 transition-colors" />
-        <span className="text-lg font-semibold">{title}</span>
-        <span className="text-sm mt-1">Find duplicate {title.toLowerCase()}</span>
+        <Icon className="h-16 w-16 mb-4 text-green-700 group-hover:text-green-400 transition-colors" />
+        <span className="text-xl font-bold">{title}</span>
+        <span className="text-base mt-1">Find duplicate {title.toLowerCase()}</span>
     </button>
 );
+
+const ScanConfirmationModal: React.FC<{
+    isOpen: boolean;
+    onClose: () => void;
+    onConfirm: (enabledDbs: string[]) => void;
+    scanType: FileType;
+    sourceCount: number;
+}> = ({ isOpen, onClose, onConfirm, scanType, sourceCount }) => {
+    const [enabledDatabases, setEnabledDatabases] = useState<Set<string>>(new Set(METADATA_DATABASES.map(db => db.id)));
+
+    const handleToggleDb = (id: string) => {
+        setEnabledDatabases(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(id)) newSet.delete(id);
+            else newSet.add(id);
+            return newSet;
+        });
+    };
+    
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+            <div className="bg-black border border-green-700 rounded-lg shadow-xl max-w-lg w-full p-6">
+                 <h3 className="text-2xl leading-6 font-bold text-green-400">Confirm Scan Options</h3>
+                 <div className="mt-4 space-y-4">
+                    <p className="text-base text-green-600">
+                        You are about to start a <span className="font-bold text-green-400 capitalize">{scanType}</span> scan across <span className="font-bold text-green-400">{sourceCount}</span> selected storage source(s).
+                    </p>
+                    <div>
+                        <h4 className="font-bold text-green-400 mb-2 text-lg">Metadata Enrichment</h4>
+                        <p className="text-sm text-green-700 mb-3">Select the databases to use for enriching file metadata during this scan.</p>
+                        <div className="space-y-2">
+                            {METADATA_DATABASES.map(db => (
+                                <label key={db.id} className="flex items-center justify-between bg-gray-900 p-3 rounded-md">
+                                    <span className="text-base text-green-500">{db.name}</span>
+                                    <input
+                                        type="checkbox"
+                                        checked={enabledDatabases.has(db.id)}
+                                        onChange={() => handleToggleDb(db.id)}
+                                        className="h-5 w-5 rounded bg-black border-green-700 text-green-500 focus:ring-2 focus:ring-offset-2 focus:ring-green-500 ring-offset-black"
+                                    />
+                                </label>
+                            ))}
+                        </div>
+                    </div>
+                 </div>
+                 <div className="mt-6 flex justify-end space-x-3">
+                    <Button onClick={onClose} variant="secondary">Cancel</Button>
+                    <Button onClick={() => onConfirm(Array.from(enabledDatabases))}>Start Scan</Button>
+                 </div>
+            </div>
+        </div>
+    );
+};
+
 
 const ScanPage: React.FC = () => {
   const [scanPhase, setScanPhase] = useState<ScanPhase>('type_selection');
@@ -42,6 +105,7 @@ const ScanPage: React.FC = () => {
   const [progress, setProgress] = useState(0);
   const [etr, setEtr] = useState('');
   const [scanStartTime, setScanStartTime] = useState<number | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     let interval: number | undefined;
@@ -90,8 +154,12 @@ const ScanPage: React.FC = () => {
     }, 1500);
   };
 
-  const handleStartScan = async () => {
+  const handleStartScan = async (enabledDatabases: string[]) => {
+    setIsModalOpen(false);
     if (selectedSources.size === 0 || !scanType) return;
+
+    console.log('Starting scan with enabled databases:', enabledDatabases);
+
     setScanPhase('scanning');
     setScanResult(null);
     setProgress(0);
@@ -145,7 +213,7 @@ const ScanPage: React.FC = () => {
                     onConnect={handleConnectSource}
                   />
                   <div className="mt-8 flex space-x-4">
-                    <Button onClick={handleStartScan} disabled={selectedSources.size === 0 || !!connectingSource}>
+                    <Button onClick={() => setIsModalOpen(true)} disabled={selectedSources.size === 0 || !!connectingSource}>
                       Start {scanType} Scan
                     </Button>
                     <Button onClick={() => setScanPhase('type_selection')} variant="secondary">
@@ -156,28 +224,28 @@ const ScanPage: React.FC = () => {
             );
         case 'scanning':
             return (
-                <div className="flex flex-col items-center justify-center bg-slate-900 border border-slate-800 rounded-lg p-12 mt-8">
-                    <h2 className="text-xl font-semibold text-white mb-6">Scan in Progress</h2>
+                <div className="flex flex-col items-center justify-center bg-black border border-green-800 rounded-lg p-12 mt-8">
+                    <h2 className="text-2xl font-bold text-green-400 mb-6">Scan in Progress</h2>
                     <div className="w-full max-w-lg">
-                        <div className="flex justify-between items-center mb-1 text-sm">
-                            <span className="font-medium text-indigo-400 capitalize">Analyzing {scanType}s...</span>
-                            <span className="font-mono font-semibold text-white">{progress}%</span>
+                        <div className="flex justify-between items-center mb-1 text-base">
+                            <span className="font-bold text-green-400 capitalize">Analyzing {scanType}s...</span>
+                            <span className="font-mono font-extrabold text-green-400">{progress}%</span>
                         </div>
-                        <div className="w-full bg-slate-700 rounded-full h-2.5 overflow-hidden">
-                            <div className="bg-indigo-500 h-2.5 rounded-full transition-all duration-300 ease-linear" style={{ width: `${progress}%` }}></div>
+                        <div className="w-full bg-green-900 rounded-full h-2.5 overflow-hidden">
+                            <div className="bg-green-500 h-2.5 rounded-full transition-all duration-300 ease-linear" style={{ width: `${progress}%` }}></div>
                         </div>
-                        <div className="text-right text-xs text-slate-400 mt-2">
+                        <div className="text-right text-sm text-green-600 mt-2">
                             <span>{etr}</span>
                         </div>
                     </div>
-                    <p className="text-slate-400 text-sm mt-8">This may take a while depending on the number of files.</p>
+                    <p className="text-green-600 text-base mt-8">This may take a while depending on the number of files.</p>
                 </div>
             );
         case 'complete':
             return scanResult && (
                 <>
                   <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-2xl font-semibold text-white capitalize">{scanType} Scan Results</h2>
+                    <h2 className="text-3xl font-bold text-green-400 capitalize">{scanType} Scan Results</h2>
                     <Button onClick={handleNewScan} variant="secondary">
                       Start New Scan
                     </Button>
@@ -190,8 +258,15 @@ const ScanPage: React.FC = () => {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold tracking-tight text-white mb-2">Duplicate Scan</h1>
-      <p className="text-slate-400 mb-8">
+      {scanType && <ScanConfirmationModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onConfirm={handleStartScan}
+        scanType={scanType}
+        sourceCount={selectedSources.size}
+      />}
+      <h1 className="text-4xl font-extrabold tracking-tight text-green-400 mb-2">Duplicate Scan</h1>
+      <p className="text-green-600 mb-8 text-lg">
         {scanPhase === 'type_selection' && 'First, select the type of file you want to scan for.'}
         {scanPhase === 'source_selection' && `Now, select storage sources to scan for duplicate ${scanType}s.`}
         {scanPhase === 'scanning' && 'Scan is underway. Please wait...'}

@@ -6,10 +6,10 @@ import Button from './Button';
 
 const NavItem: React.FC<{ to: string; icon: React.FC<any>; children: React.ReactNode; collapsed: boolean; }> = ({ to, icon: Icon, children, collapsed }) => {
     const navLinkClasses = ({ isActive }: { isActive: boolean }) =>
-    `flex items-center p-2 text-sm font-medium rounded-lg transition-colors duration-200 group ${
+    `flex items-center p-2 text-base font-semibold rounded-lg transition-colors duration-200 group ${
       isActive
-        ? 'bg-slate-800 text-white'
-        : 'text-slate-400 hover:bg-slate-700 hover:text-white'
+        ? 'bg-green-900/50 text-green-300'
+        : 'text-green-600 hover:bg-green-900/20 hover:text-green-400'
     }`;
     
     return (
@@ -30,12 +30,12 @@ const Header: React.FC<{ onToggle: () => void; }> = ({ onToggle }) => {
     }
     
     return (
-        <header className="flex items-center justify-between h-16 px-6 border-b border-slate-800 flex-shrink-0">
+        <header className="flex items-center justify-between h-16 px-6 border-b border-green-800 flex-shrink-0">
             <div className="flex items-center">
-                <button onClick={onToggle} className="p-2 rounded-md text-slate-400 hover:bg-slate-800 hover:text-white md:hidden">
+                <button onClick={onToggle} className="p-2 rounded-md text-green-500 hover:bg-green-900/20 hover:text-green-300 md:hidden">
                     <svg className="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7" /></svg>
                 </button>
-                <h1 className="text-xl font-semibold text-white ml-2 md:ml-0">{getTitle()}</h1>
+                <h1 className="text-2xl font-bold text-green-400 ml-2 md:ml-0">{getTitle()}</h1>
             </div>
             {getTitle() === 'Dashboard' && (
                 <NavLink to="/scan">
@@ -58,8 +58,8 @@ const Layout: React.FC = () => {
   const SidebarContent = () => (
      <div className="flex flex-col h-full p-4">
         <div className={`flex items-center mb-8 shrink-0 ${sidebarCollapsed ? 'justify-center' : ''}`}>
-          <svg className="h-8 w-8 text-indigo-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 12 2.5Zm0 17a7.5 7.5 0 1 1 7.5-7.5A7.5 7.5 0 0 1 12 19.5ZM12 6a.75.75 0 0 0-.75.75v5.5a.75.75 0 0 0 1.5 0v-5.5A.75.75 0 0 0 12 6Zm0 8.5a1 1 0 1 0 0 2 1 1 0 0 0 0-2Z"/></svg>
-          <h1 className={`ml-3 text-xl font-bold tracking-tight text-white transition-opacity duration-200 ${sidebarCollapsed ? 'opacity-0' : 'opacity-100'}`}>AstraDup</h1>
+          <svg className="h-8 w-8 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 12 2.5Zm0 17a7.5 7.5 0 1 1 7.5-7.5A7.5 7.5 0 0 1 12 19.5ZM12 6a.75.75 0 0 0-.75.75v5.5a.75.75 0 0 0 1.5 0v-5.5A.75.75 0 0 0 12 6Zm0 8.5a1 1 0 1 0 0 2 1 1 0 0 0 0-2Z"/></svg>
+          <h1 className={`ml-3 text-2xl font-extrabold tracking-tight text-green-400 transition-opacity duration-200 ${sidebarCollapsed ? 'opacity-0' : 'opacity-100'}`}>AstraDup</h1>
         </div>
         <nav className="space-y-2">
           <NavItem to="/" icon={DashboardIcon} collapsed={sidebarCollapsed}>Dashboard</NavItem>
@@ -68,7 +68,7 @@ const Layout: React.FC = () => {
           <NavItem to="/settings" icon={SettingsIcon} collapsed={sidebarCollapsed}>Settings</NavItem>
         </nav>
         <div className="mt-auto hidden md:block">
-            <button onClick={toggleSidebar} className="flex items-center w-full p-2 text-sm font-medium rounded-lg text-slate-400 hover:bg-slate-700 hover:text-white">
+            <button onClick={toggleSidebar} className="flex items-center w-full p-2 text-sm font-medium rounded-lg text-green-600 hover:bg-green-900/20 hover:text-green-400">
                 <svg className={`h-6 w-6 shrink-0 transition-transform duration-300 ${sidebarCollapsed ? 'rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
                 <span className={`ml-3 whitespace-nowrap transition-opacity duration-200 ${sidebarCollapsed ? 'opacity-0' : 'opacity-100'}`}>Collapse</span>
             </button>
@@ -77,16 +77,16 @@ const Layout: React.FC = () => {
   );
 
   return (
-    <div className="flex h-screen bg-slate-950 text-slate-50">
+    <div className="flex h-screen bg-black text-green-400">
       {/* Desktop Sidebar */}
-      <aside className={`hidden md:flex flex-shrink-0 flex-col bg-slate-900 border-r border-slate-800 transition-all duration-300 ${sidebarWidth}`}>
+      <aside className={`hidden md:flex flex-shrink-0 flex-col bg-black border-r border-green-800 transition-all duration-300 ${sidebarWidth}`}>
         <SidebarContent />
       </aside>
 
       {/* Mobile Sidebar */}
        <div className={`fixed inset-0 z-40 flex md:hidden ${mobileSidebarOpen ? '' : 'pointer-events-none'}`}>
-          <div onClick={toggleMobileSidebar} className={`absolute inset-0 bg-black/60 transition-opacity ${mobileSidebarOpen ? 'opacity-100' : 'opacity-0'}`}></div>
-          <aside className={`relative w-64 flex-shrink-0 flex-col bg-slate-900 border-r border-slate-800 transition-transform duration-300 transform ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+          <div onClick={toggleMobileSidebar} className={`absolute inset-0 bg-black/80 transition-opacity ${mobileSidebarOpen ? 'opacity-100' : 'opacity-0'}`}></div>
+          <aside className={`relative w-64 flex-shrink-0 flex-col bg-black border-r border-green-800 transition-transform duration-300 transform ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
             <SidebarContent />
           </aside>
       </div>
