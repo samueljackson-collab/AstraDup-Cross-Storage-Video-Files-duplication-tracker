@@ -148,6 +148,26 @@ GEMINI_API_KEY=your_api_key_here
 - **Parallel Workers** — Concurrent processing threads
 - **GPU Acceleration** — Toggle hardware acceleration for embeddings
 
+## Run locally
+
+**Prerequisites:** Node.js
+
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
+2. Copy the example environment file:
+   ```bash
+   cp .env.local.example .env.local
+   ```
+3. Update `.env.local` with your Gemini API key:
+   ```dotenv
+   GEMINI_API_KEY=your_api_key_here
+   ```
+4. Run the app:
+   ```bash
+   npm run dev
+   ```
 ## Contributing
 
 1. Fork the repository
