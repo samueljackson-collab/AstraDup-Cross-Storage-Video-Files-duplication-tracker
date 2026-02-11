@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import StorageSelector from '../components/StorageSelector';
 import DuplicateResultDisplay from '../components/DuplicateResultDisplay';
 import Spinner from '../components/Spinner';
@@ -8,6 +8,7 @@ import { startScan } from '../services/api';
 import type { ScanResult, StorageSource, FileType } from '../types';
 import { HardDriveIcon, ServerIcon, GoogleDriveIcon, DropboxIcon, OneDriveIcon, CheckCircleIcon } from '../components/Icons';
 import { FilmIcon, PhotoIcon, DocumentTextIcon } from '../components/FileTypeIcons';
+import { useToast } from '../components/Toast';
 
 type ScanPhase = 'type_selection' | 'source_selection' | 'scanning' | 'complete';
 
@@ -96,6 +97,7 @@ const ScanConfirmationModal: React.FC<{
 
 
 const ScanPage: React.FC = () => {
+  const { showToast } = useToast();
   const [scanPhase, setScanPhase] = useState<ScanPhase>('type_selection');
   const [scanType, setScanType] = useState<FileType | null>(null);
   const [selectedSources, setSelectedSources] = useState<Set<string>>(new Set(['local'])); // Select local by default
@@ -158,8 +160,6 @@ const ScanPage: React.FC = () => {
     setIsModalOpen(false);
     if (selectedSources.size === 0 || !scanType) return;
 
-    console.log('Starting scan with enabled databases:', enabledDatabases);
-
     setScanPhase('scanning');
     setScanResult(null);
     setProgress(0);
@@ -171,9 +171,8 @@ const ScanPage: React.FC = () => {
       setProgress(100);
       setScanResult(result);
       setScanPhase('complete');
-    } catch (error) {
-      console.error('Scan failed:', error);
-      alert('An error occurred during the scan.');
+    } catch {
+      showToast('An error occurred during the scan.', 'error');
       setScanPhase('source_selection');
     } finally {
         setScanStartTime(null);

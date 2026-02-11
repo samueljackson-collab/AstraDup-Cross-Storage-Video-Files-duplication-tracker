@@ -1,13 +1,20 @@
 
-import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
+import type { GenerateContentResponse } from "@google/genai";
 
+// SECURITY WARNING: This API key is embedded in the client-side bundle and is
+// visible to anyone using browser DevTools. For production use, proxy all
+// Gemini API calls through a backend server that keeps the key secret.
+// At minimum, restrict this key in the Google Cloud Console:
+//   - Set HTTP referrer restrictions to your domain
+//   - Set daily quota limits to cap potential abuse
 const API_KEY = process.env.API_KEY;
 
 if (!API_KEY) {
-    console.warn("API_KEY environment variable not set. App may not function correctly.");
+    console.warn('GEMINI_API_KEY not set. AI features will not work. See .env.local.example.');
 }
 
-const ai = new GoogleGenAI({ apiKey: API_KEY! });
+const ai = new GoogleGenAI({ apiKey: API_KEY ?? '' });
 
 // --- Helper Functions ---
 

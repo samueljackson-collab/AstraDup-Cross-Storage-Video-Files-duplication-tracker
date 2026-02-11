@@ -1,9 +1,10 @@
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import Button from '../components/Button';
 import { PlusIcon, TrashIcon } from '../components/Icons';
 import { groundedQuery } from '../services/gemini';
 import Spinner from '../components/Spinner';
+import { useToast } from '../components/Toast';
 
 const SettingsField: React.FC<{ label: string; description: string; children: React.ReactNode }> = ({ label, description, children }) => (
   <div className="flex justify-between items-start py-6 border-b border-green-800 last:border-b-0">
@@ -36,6 +37,7 @@ const DEFAULT_DATABASES = [
 ];
 
 const Settings: React.FC = () => {
+  const { showToast } = useToast();
   const [databases, setDatabases] = useState(DEFAULT_DATABASES);
   const [customDbInput, setCustomDbInput] = useState('');
   
@@ -83,8 +85,8 @@ const Settings: React.FC = () => {
         const resultsArray = JSON.parse(jsonString);
         if (Array.isArray(resultsArray)) {
              const newResults = resultsArray.filter(
-                (result: any) => typeof result === 'string' && !databases.some(db => db.name.toLowerCase() === result.toLowerCase())
-            );
+                (result: unknown) => typeof result === 'string' && !databases.some(db => db.name.toLowerCase() === result.toLowerCase())
+            ) as string[];
             setSearchResults(newResults);
             if (newResults.length === 0) {
                 setSearchError('No new sources found or all suggestions are already in your list.');
@@ -93,8 +95,7 @@ const Settings: React.FC = () => {
             throw new Error('Invalid response format from AI.');
         }
 
-    } catch (error) {
-        console.error("Database search failed:", error);
+    } catch {
         setSearchError("Failed to fetch suggestions. Please try again.");
     } finally {
         setIsSearching(false);
@@ -212,8 +213,8 @@ const Settings: React.FC = () => {
       </div>
 
       <div className="mt-8 flex justify-end">
-        <Button variant="secondary" className="mr-4">Reset to Defaults</Button>
-        <Button>Save Changes</Button>
+        <Button variant="secondary" className="mr-4" onClick={() => { setDatabases(DEFAULT_DATABASES); showToast('Settings reset to defaults.', 'info'); }}>Reset to Defaults</Button>
+        <Button onClick={() => showToast('Settings saved.', 'success')}>Save Changes</Button>
       </div>
 
     </div>

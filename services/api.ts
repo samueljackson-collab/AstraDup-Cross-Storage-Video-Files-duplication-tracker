@@ -1,5 +1,5 @@
 
-import type { DashboardStats, ScanResult, AnyFile, DuplicatePair, VideoFile, ImageFile, DocumentFile, FileType, EnrichedVideoMetadata } from '../types';
+import type { DashboardStats, ScanResult, AnyFile, DuplicatePair, FileType, EnrichedVideoMetadata } from '../types';
 
 const BUNNY_VIDEO_URL = "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
 
@@ -41,9 +41,9 @@ const MOCK_FILES: { [key: string]: AnyFile } = {
 };
 
 const MOCK_DUPLICATE_PAIRS: DuplicatePair[] = [
-    { id: 'pair_vid', file1: MOCK_FILES['vid1'], file2: MOCK_FILES['vid2'], similarityScore: 97, matchedModalities: ['pHash', 'dHash', 'Audio', 'Face Clusters'] },
-    { id: 'pair_img', file1: MOCK_FILES['img1'], file2: MOCK_FILES['img2'], similarityScore: 99, matchedModalities: ['pHash', 'dHash', 'EXIF Time'] },
-    { id: 'pair_doc', file1: MOCK_FILES['doc1'], file2: MOCK_FILES['doc2'], similarityScore: 98, matchedModalities: ['Text Hash', 'Content Similarity'] }
+    { id: 'pair_vid', file1: MOCK_FILES['vid1']!, file2: MOCK_FILES['vid2']!, similarityScore: 97, matchedModalities: ['pHash', 'dHash', 'Audio', 'Face Clusters'] },
+    { id: 'pair_img', file1: MOCK_FILES['img1']!, file2: MOCK_FILES['img2']!, similarityScore: 99, matchedModalities: ['pHash', 'dHash', 'EXIF Time'] },
+    { id: 'pair_doc', file1: MOCK_FILES['doc1']!, file2: MOCK_FILES['doc2']!, similarityScore: 98, matchedModalities: ['Text Hash', 'Content Similarity'] }
 ];
 
 // --- API Functions ---
@@ -55,14 +55,18 @@ export const getDashboardStats = (): Promise<DashboardStats> => {
         videoDuplicates: 128,
         imageDuplicates: 312,
         documentDuplicates: 45,
-        storageSavedTB: 3.8
+        storageSavedTB: 3.8,
+        byType: {
+          video: { filesScanned: 2173, duplicatesFound: 128, storageSavedTB: 2.66 },
+          image: { filesScanned: 2716, duplicatesFound: 312, storageSavedTB: 0.76 },
+          document: { filesScanned: 543, duplicatesFound: 45, storageSavedTB: 0.38 },
+        },
       });
     }, 500);
   });
 };
 
-export const startScan = (sources: string[], scanType: FileType): Promise<ScanResult> => {
-  console.log(`Starting ${scanType} scan for sources:`, sources);
+export const startScan = (_sources: string[], scanType: FileType): Promise<ScanResult> => {
   return new Promise(resolve => {
     setTimeout(() => {
       const relevantPairs = MOCK_DUPLICATE_PAIRS.filter(p => p.file1.fileType === scanType);
@@ -103,8 +107,7 @@ export const getDuplicatesForFile = (fileId: string): Promise<AnyFile[]> => {
     });
 };
 
-export const enrichVideoMetadata = (fileId: string): Promise<EnrichedVideoMetadata> => {
-    console.log(`Enriching metadata for ${fileId}`);
+export const enrichVideoMetadata = (_fileId: string): Promise<EnrichedVideoMetadata> => {
     return new Promise(resolve => {
         setTimeout(() => {
             resolve({

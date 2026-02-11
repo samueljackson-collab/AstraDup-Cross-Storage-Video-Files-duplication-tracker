@@ -1,11 +1,11 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import type { ScanResult, DuplicatePair, AnyFile } from '../types';
+import type { ScanResult, DuplicatePair } from '../types';
 import Button from './Button';
 import FilePreview from './FilePreview';
-import { InfoIcon, TrashIcon, CheckCircleIcon, XCircleIcon } from './Icons';
-import { FilmIcon, PhotoIcon, DocumentTextIcon } from './FileTypeIcons';
+import { TrashIcon, CheckCircleIcon, XCircleIcon } from './Icons';
+import { useToast } from './Toast';
 
 const DuplicatePairCard: React.FC<{ pair: DuplicatePair, isSelected: boolean, onSelect: () => void; }> = ({ pair, isSelected, onSelect }) => {
     const scoreColor = 'text-green-400';
@@ -53,6 +53,7 @@ const DuplicatePairCard: React.FC<{ pair: DuplicatePair, isSelected: boolean, on
 
 
 const DuplicateResultDisplay: React.FC<{ result: ScanResult }> = ({ result }) => {
+  const { showToast } = useToast();
   const [selectedPairs, setSelectedPairs] = useState<Set<string>>(new Set());
   const [allPairs, setAllPairs] = useState(result.duplicatePairs);
 
@@ -77,17 +78,17 @@ const DuplicateResultDisplay: React.FC<{ result: ScanResult }> = ({ result }) =>
   };
 
   const handleDeleteSelected = () => {
-    console.log('Deleting pairs:', Array.from(selectedPairs));
+    const count = selectedPairs.size;
     setAllPairs(prev => prev.filter(p => !selectedPairs.has(p.id)));
     setSelectedPairs(new Set());
-    alert(`${selectedPairs.size} pairs have been marked for deletion.`);
+    showToast(`${count} pairs have been marked for deletion.`, 'success');
   };
 
   const handleMarkNotDuplicate = () => {
-    console.log('Marking pairs as not duplicates:', Array.from(selectedPairs));
+    const count = selectedPairs.size;
     setAllPairs(prev => prev.filter(p => !selectedPairs.has(p.id)));
     setSelectedPairs(new Set());
-    alert(`${selectedPairs.size} pairs have been marked as not duplicates and removed from this list.`);
+    showToast(`${count} pairs have been marked as not duplicates.`, 'info');
   };
 
   const allSelected = allPairs.length > 0 && selectedPairs.size === allPairs.length;

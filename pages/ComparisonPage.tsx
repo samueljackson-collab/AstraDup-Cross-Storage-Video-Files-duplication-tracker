@@ -1,45 +1,27 @@
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getFileDetails } from '../services/api';
 import { analyzeVideoFrames, groundedQuery } from '../services/gemini';
+import { extractFrames } from '../services/videoUtils';
 import type { AnyFile, VideoFile, ImageFile, DocumentFile, EnrichedVideoMetadata } from '../types';
 import Spinner from '../components/Spinner';
+import DetailItem from '../components/DetailItem';
+import AnalysisItem from '../components/AnalysisItem';
+import { useToast } from '../components/Toast';
 import { ArrowLeftIcon, CheckCircleIcon, TrashIcon } from '../components/Icons';
 import Button from '../components/Button';
 
-// --- Shared Components ---
-const DetailItem: React.FC<{ label: string; value: React.ReactNode; mono?: boolean, highlight?: boolean }> = ({ label, value, mono, highlight }) => (
-  <div>
-    <dt className="text-sm font-semibold text-green-600">{label}</dt>
-    <dd className={`mt-1 text-sm break-words ${mono ? 'font-mono' : ''} ${highlight ? 'text-green-300 bg-green-900/50 p-1 rounded' : 'text-green-400'}`}>{value}</dd>
-  </div>
-);
-
-const AnalysisItem: React.FC<{ label: string; value?: React.ReactNode; confidence: number; mono?: boolean }> = ({ label, value, confidence, mono }) => {
-    const confidenceColor = 'bg-green-500';
-    return (
-        <div>
-            <div className="flex justify-between items-center mb-1">
-                <dt className="text-sm font-semibold text-green-600">{label}</dt>
-                <dd className="text-sm font-bold text-green-400">{confidence}%</dd>
-            </div>
-            <div className="w-full bg-green-900 rounded-full h-1" title={`${confidence}% confidence`}><div className={`${confidenceColor} h-1 rounded-full`} style={{ width: `${confidence}%` }}></div></div>
-            {value && <div className={`mt-1.5 text-sm text-green-500 truncate ${mono ? 'font-mono' : ''}`} title={typeof value === 'string' ? value : undefined}>{value}</div>}
-        </div>
-    );
-};
-
-const ActionPanel: React.FC<{ fileToKeep: AnyFile, fileToDelete: AnyFile, onDelete: (file: AnyFile) => void }> = ({ fileToKeep, fileToDelete, onDelete }) => {
+const ActionPanel: React.FC<{ fileToKeep: AnyFile, fileToDelete: AnyFile, onKeep: (file: AnyFile) => void, onDelete: (file: AnyFile) => void }> = ({ fileToKeep, fileToDelete, onKeep, onDelete }) => {
     return (
         <div className="bg-black border border-green-800 rounded-lg p-3 mt-4 grid grid-cols-2 gap-3">
-             <Button variant="primary" className="text-xs" onClick={() => onDelete(fileToDelete)}>
+             <Button variant="primary" className="text-xs" onClick={() => onKeep(fileToKeep)}>
                 <CheckCircleIcon className="h-4 w-4 mr-2" />
                 Keep This
             </Button>
             <Button variant="secondary" className="text-xs bg-red-900/50 hover:bg-red-900 border-red-800 text-red-300 hover:text-red-200 focus:ring-red-500" onClick={() => onDelete(fileToDelete)}>
                 <TrashIcon className="h-4 w-4 mr-2" />
-                Delete Other
+                Delete This
             </Button>
         </div>
     )
@@ -106,59 +88,20 @@ const EnrichmentPanel: React.FC<{ file: VideoFile }> = ({ file }) => {
         }
     }, [suggestions, file.name]);
     
-     const extractFrames = (duration: number): Promise<{ data: string, mimeType: string }[]> => {
-        return new Promise((resolve, reject) => {
-            const video = videoRef.current;
-            const canvas = canvasRef.current;
-            if (!video || !canvas) return reject(new Error("Video or Canvas not ready"));
-
-            const frames: { data: string, mimeType: string }[] = [];
-            const timestamps = [duration * 0.2, duration * 0.5, duration * 0.8];
-            let index = 0;
-            
-            const seekListener = () => {
-                if(index < timestamps.length) {
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-                    canvas.getContext('2d')?.drawImage(video, 0, 0, canvas.width, canvas.height);
-                    frames.push({ data: canvas.toDataURL('image/jpeg', 0.8), mimeType: 'image/jpeg' });
-                    index++;
-                    if(index < timestamps.length) {
-                        video.currentTime = timestamps[index];
-                    } else {
-                        video.removeEventListener('seeked', seekListener);
-                        resolve(frames);
-                    }
-                }
-            };
-
-            const loadedMetadataListener = () => {
-                 video.addEventListener('seeked', seekListener);
-                 video.currentTime = timestamps[index];
-            };
-
-            video.addEventListener('loadedmetadata', loadedMetadataListener, { once: true });
-            
-            if (video.readyState >= 1) { // If metadata already loaded
-                loadedMetadataListener();
-            }
-        });
-    };
-
     const handleEnrich = async () => {
         setLoading(true);
         setIsApplied(false);
         setSuggestions(null);
         setError('');
-        
-        if (!videoRef.current) {
+
+        if (!videoRef.current || !canvasRef.current) {
             setLoading(false);
             setError("Video element ref is not available.");
             return;
         }
 
         try {
-            const frames = await extractFrames(videoRef.current.duration);
+            const frames = await extractFrames(videoRef.current, canvasRef.current, 3);
             if (frames.length === 0) throw new Error("Could not extract any frames from the video.");
 
             const prompt = `Analyze the video frames. The current filename is "${file.name}". Suggest a proper title, a short plot summary, potential actors, and a genre. Respond ONLY with a valid JSON object with keys: "title", "plot", "actors" (string array), "genre" (string), and "releaseDate" (YYYY-MM-DD string, or empty string if unknown).`;
@@ -175,7 +118,7 @@ const EnrichmentPanel: React.FC<{ file: VideoFile }> = ({ file }) => {
 
             const searchQuery = `"${data.title}" ${data.releaseDate ? `(${data.releaseDate.split('-')[0]})` : ''} movie details`;
             const searchResponse = await groundedQuery(searchQuery);
-            const firstWebResult = searchResponse.candidates?.[0]?.groundingMetadata?.groundingChunks?.find((c: any) => c.web)?.web;
+            const firstWebResult = searchResponse.candidates?.[0]?.groundingMetadata?.groundingChunks?.find((c: Record<string, unknown>) => c.web)?.web as { title?: string; uri?: string } | undefined;
 
             const finalSuggestions: EnrichedVideoMetadata = {
                 title: data.title || file.name,
@@ -189,8 +132,7 @@ const EnrichmentPanel: React.FC<{ file: VideoFile }> = ({ file }) => {
                 }
             };
             setSuggestions(finalSuggestions);
-        } catch (err) {
-            console.error("Failed to enrich metadata:", err);
+        } catch {
             setError("Failed to analyze video. Please check your API key and network connection.");
         } finally {
             setLoading(false);
@@ -198,8 +140,7 @@ const EnrichmentPanel: React.FC<{ file: VideoFile }> = ({ file }) => {
     };
 
     const handleApply = () => {
-        // Here you would make an API call to save the changes
-        console.log("Applying changes:", { fileId: file.id, selectedChanges, manualTitle });
+        // TODO: Make an API call to persist the changes
         setIsApplied(true);
     };
 
@@ -277,7 +218,7 @@ const VideoColumn: React.FC<{ file: VideoFile, original: VideoFile, onDelete: (f
         </div>
         <h2 className="text-2xl font-extrabold text-green-400 mt-4 truncate">{file.name}</h2>
         <p className="text-sm text-green-600 font-mono break-all">{file.path}</p>
-        <ActionPanel fileToKeep={file} fileToDelete={original} onDelete={onDelete} />
+        <ActionPanel fileToKeep={file} fileToDelete={original} onKeep={onDelete} onDelete={onDelete} />
         <div className="bg-black border border-green-800 rounded-lg p-4 mt-4">
             <h3 className="text-lg font-bold text-green-400 border-b border-green-800 pb-2 mb-3">File Metadata</h3>
             <dl className="grid grid-cols-2 gap-x-4 gap-y-4">
@@ -320,7 +261,7 @@ const ImageColumn: React.FC<{ file: ImageFile, original: ImageFile, onDelete: (f
             </div>
             <h2 className="text-2xl font-extrabold text-green-400 mt-4 truncate">{file.name}</h2>
             <p className="text-sm text-green-600 font-mono break-all">{file.path}</p>
-            <ActionPanel fileToKeep={file} fileToDelete={original} onDelete={onDelete} />
+            <ActionPanel fileToKeep={file} fileToDelete={original} onKeep={onDelete} onDelete={onDelete} />
             <div className="bg-black border border-green-800 rounded-lg p-4 mt-4">
                 <h3 className="text-lg font-bold text-green-400 border-b border-green-800 pb-2 mb-3">EXIF Data</h3>
                 <dl className="grid grid-cols-2 gap-x-4 gap-y-4">
@@ -350,7 +291,7 @@ const DocumentColumn: React.FC<{ file: DocumentFile, original: DocumentFile, onD
             {file.pageCount !== original.pageCount && <span className="flex-shrink-0 ml-2 bg-green-900/80 text-green-300 text-sm font-bold px-2 py-1 rounded-full">{file.pageCount} pages</span>}
         </div>
         <p className="text-sm text-green-600 font-mono break-all mb-4">{file.path}</p>
-        <ActionPanel fileToKeep={file} fileToDelete={original} onDelete={onDelete} />
+        <ActionPanel fileToKeep={file} fileToDelete={original} onKeep={onDelete} onDelete={onDelete} />
         <dl className="grid grid-cols-2 gap-x-4 gap-y-4 my-4">
             <DetailItem label="Size" value={`${file.sizeMB} MB`} highlight={file.sizeMB !== original.sizeMB} />
             <DetailItem label="Page Count" value={file.pageCount} highlight={file.pageCount !== original.pageCount} />
@@ -370,6 +311,7 @@ const DocumentColumn: React.FC<{ file: DocumentFile, original: DocumentFile, onD
 const ComparisonPage: React.FC = () => {
     const { fileId1, fileId2 } = useParams<{ fileId1: string, fileId2: string }>();
     const navigate = useNavigate();
+    const { showToast } = useToast();
     const [files, setFiles] = useState<[AnyFile | null, AnyFile | null]>([null, null]);
     const [loading, setLoading] = useState(true);
     const [showPixelDiff, setShowPixelDiff] = useState(false);
@@ -381,7 +323,7 @@ const ComparisonPage: React.FC = () => {
             setLoading(true);
             Promise.all([ getFileDetails(fileId1), getFileDetails(fileId2) ])
                 .then(([data1, data2]) => { setFiles([data1 || null, data2 || null]); setLoading(false); })
-                .catch(error => { console.error("Failed to fetch file details", error); setLoading(false); });
+                .catch(() => { setLoading(false); });
         }
     }, [fileId1, fileId2]);
 
@@ -391,10 +333,9 @@ const ComparisonPage: React.FC = () => {
 
     const handleConfirmDelete = () => {
         if (confirmingDelete) {
-            console.log(`Deleting file: ${confirmingDelete.id}`);
-            alert(`File "${confirmingDelete.name}" has been marked for deletion.`);
+            showToast(`File "${confirmingDelete.name}" has been marked for deletion.`, 'success');
             setConfirmingDelete(null);
-            navigate(-1); // Go back after deletion
+            navigate(-1);
         }
     };
 

@@ -3,12 +3,19 @@ import type * as React from 'react';
 
 export type FileType = 'video' | 'image' | 'document';
 
+export interface FileTypeStats {
+  filesScanned: number;
+  duplicatesFound: number;
+  storageSavedTB: number;
+}
+
 export interface DashboardStats {
   filesScanned: number;
   videoDuplicates: number;
   imageDuplicates: number;
   documentDuplicates: number;
   storageSavedTB: number;
+  byType: Record<FileType, FileTypeStats>;
 }
 
 export interface StorageSource {
