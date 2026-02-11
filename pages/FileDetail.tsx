@@ -335,6 +335,13 @@ const VideoDetailContent: React.FC<VideoDetailProps> = ({ file, initialDuplicate
 
     const renderDuplicatesContent = () => (
         <div className="p-5 space-y-4">
+            {duplicates.length > 0 && (
+                <div className="mb-4">
+                    <Link to={`/compare/${file.id}/${duplicates[0].id}`}>
+                        <Button className="w-full">Compare with First Duplicate</Button>
+                    </Link>
+                </div>
+            )}
             {duplicates.length > 0 ? (
                 duplicates.map(dup => <DuplicateItem key={dup.id} currentFileId={file.id} duplicate={dup} onMarkAsNotDuplicate={handleMarkAsNotDuplicate} />)
             ) : (
@@ -524,6 +531,13 @@ const FileDetail: React.FC = () => {
   const renderDuplicatesContent = () => {
     return (
         <div className="p-5 space-y-4">
+            {(file?.fileType === 'image' && duplicates.length > 0) && (
+                <div className="mb-4">
+                    <Link to={`/compare/${file.id}/${duplicates[0].id}`}>
+                        <Button className="w-full">Compare with First Duplicate</Button>
+                    </Link>
+                </div>
+            )}
             {duplicates.length > 0 ? (
                 duplicates.map(dup => <DuplicateItem key={dup.id} currentFileId={file!.id} duplicate={dup} onMarkAsNotDuplicate={handleMarkAsNotDuplicate} />)
             ) : (

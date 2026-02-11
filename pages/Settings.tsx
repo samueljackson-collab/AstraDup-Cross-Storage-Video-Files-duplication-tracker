@@ -38,6 +38,7 @@ const DEFAULT_DATABASES = [
 const Settings: React.FC = () => {
   const [databases, setDatabases] = useState(DEFAULT_DATABASES);
   const [customDbInput, setCustomDbInput] = useState('');
+  const [autoEnrich, setAutoEnrich] = useState(true);
   
   // State for AI search
   const [searchQuery, setSearchQuery] = useState('');
@@ -143,8 +144,8 @@ const Settings: React.FC = () => {
                 <p className="text-sm text-green-700 mt-2">Placeholders: <code className="text-green-400">{`{title}`}</code>, <code className="text-green-400">{`{year}`}</code>, <code className="text-green-400">{`{resolution}`}</code></p>
              </div>
           </SettingsField>
-          <SettingsField label="Automatic Enrichment" description="Automatically fetch metadata for new files during scans.">
-             <Toggle checked={true} onChange={() => {}} />
+          <SettingsField label="Automatic Metadata Enrichment" description="Automatically fetch metadata for new video files during scans.">
+             <Toggle checked={autoEnrich} onChange={(e) => setAutoEnrich(e.target.checked)} />
           </SettingsField>
         </div>
       </div>
@@ -164,12 +165,12 @@ const Settings: React.FC = () => {
         </div>
       </div>
       
-       <div className="bg-black border border-green-800 rounded-lg mt-8">
+       <div className={`bg-black border border-green-800 rounded-lg mt-8 transition-opacity duration-300 ${!autoEnrich ? 'opacity-50' : ''}`}>
         <div className="p-6">
           <h2 className="text-2xl font-bold text-green-400">Reference Databases</h2>
           <p className="text-base text-green-600 mt-1">Manage external sources for enriching video metadata.</p>
         </div>
-        <div className="px-6">
+        <fieldset disabled={!autoEnrich} className="px-6">
            {databases.map(db => (
               <div key={db.id} className="flex justify-between items-center py-4 border-b border-green-800 last:border-b-0">
                 <span className="text-base text-green-400">{db.name}</span>
@@ -208,7 +209,7 @@ const Settings: React.FC = () => {
                     <Button onClick={() => { if(handleAddCustomDb(customDbInput)) setCustomDbInput(''); }} className="rounded-l-none"><PlusIcon className="w-5 h-5"/></Button>
                 </div>
             </div>
-        </div>
+        </fieldset>
       </div>
 
       <div className="mt-8 flex justify-end">
