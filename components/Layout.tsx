@@ -3,8 +3,9 @@ import React, { useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { DashboardIcon, ScanIcon, SettingsIcon, SparklesIcon } from './Icons';
 import Button from './Button';
+import ErrorBoundary from './ErrorBoundary';
 
-const NavItem: React.FC<{ to: string; icon: React.FC<any>; children: React.ReactNode; collapsed: boolean; }> = ({ to, icon: Icon, children, collapsed }) => {
+const NavItem: React.FC<{ to: string; icon: React.FC<React.SVGProps<SVGSVGElement>>; children: React.ReactNode; collapsed: boolean; }> = ({ to, icon: Icon, children, collapsed }) => {
     const navLinkClasses = ({ isActive }: { isActive: boolean }) =>
     `flex items-center p-2 text-base font-semibold rounded-lg transition-colors duration-200 group ${
       isActive
@@ -91,11 +92,13 @@ const Layout: React.FC = () => {
           </aside>
       </div>
 
-      <div className="flex flex-col flex-1 w-0">
+      <div className="flex flex-col flex-1 min-w-0">
         <Header onToggle={toggleMobileSidebar} />
         <main className="flex-1 overflow-y-auto">
           <div className="p-4 sm:p-6 md:p-8">
-            <Outlet />
+            <ErrorBoundary>
+              <Outlet />
+            </ErrorBoundary>
           </div>
         </main>
       </div>

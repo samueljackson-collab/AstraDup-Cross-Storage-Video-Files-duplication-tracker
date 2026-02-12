@@ -1,11 +1,10 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import type { ScanResult, DuplicatePair, AnyFile } from '../types';
+import type { ScanResult, DuplicatePair } from '../types';
 import Button from './Button';
 import FilePreview from './FilePreview';
 import { InfoIcon, TrashIcon, CheckCircleIcon, XCircleIcon } from './Icons';
-import { FilmIcon, PhotoIcon, DocumentTextIcon } from './FileTypeIcons';
 
 const DuplicatePairCard: React.FC<{ pair: DuplicatePair, isSelected: boolean, onSelect: () => void; }> = ({ pair, isSelected, onSelect }) => {
     const scoreColor = 'text-green-400';
@@ -55,6 +54,12 @@ const DuplicatePairCard: React.FC<{ pair: DuplicatePair, isSelected: boolean, on
 const DuplicateResultDisplay: React.FC<{ result: ScanResult }> = ({ result }) => {
   const [selectedPairs, setSelectedPairs] = useState<Set<string>>(new Set());
   const [allPairs, setAllPairs] = useState(result.duplicatePairs);
+  const [lastActionMessage, setLastActionMessage] = useState<string | null>(null);
+
+  const showMessage = (message: string) => {
+    setLastActionMessage(message);
+    setTimeout(() => setLastActionMessage(null), 3000);
+  };
 
   const handleTogglePair = (pairId: string) => {
     setSelectedPairs(prev => {
@@ -77,23 +82,23 @@ const DuplicateResultDisplay: React.FC<{ result: ScanResult }> = ({ result }) =>
   };
 
   const handleDeleteSelected = () => {
-    console.log('Deleting pairs:', Array.from(selectedPairs));
+    const count = selectedPairs.size;
     setAllPairs(prev => prev.filter(p => !selectedPairs.has(p.id)));
     setSelectedPairs(new Set());
-    alert(`${selectedPairs.size} pairs have been marked for deletion.`);
+    showMessage(`${count} pair(s) have been marked for deletion.`);
   };
 
   const handleMarkNotDuplicate = () => {
-    console.log('Marking pairs as not duplicates:', Array.from(selectedPairs));
+    const count = selectedPairs.size;
     setAllPairs(prev => prev.filter(p => !selectedPairs.has(p.id)));
     setSelectedPairs(new Set());
-    alert(`${selectedPairs.size} pairs have been marked as not duplicates and removed from this list.`);
+    showMessage(`${count} pair(s) have been marked as not duplicates.`);
   };
 
   const allSelected = allPairs.length > 0 && selectedPairs.size === allPairs.length;
   const isIndeterminate = selectedPairs.size > 0 && selectedPairs.size < allPairs.length;
 
-  if (allPairs.length === 0) {
+  if (allPairs.length === 0 && !lastActionMessage) {
     return (
       <div className="text-center bg-black border border-green-800 rounded-lg p-12">
         <CheckCircleIcon className="h-16 w-16 text-green-500 mx-auto mb-4" />
@@ -112,13 +117,20 @@ const DuplicateResultDisplay: React.FC<{ result: ScanResult }> = ({ result }) =>
             </div>
             <div>
                 <p className="text-base text-green-600">Duplicate Pairs Found</p>
-                <p className="text-3xl font-extrabold text-green-400">{allPairs.length}</p>
+                <p className="text-3xl font-extrabold text-green-400">{result.duplicatePairs.length}</p>
             </div>
             <div>
                 <p className="text-base text-green-600">Potential Savings</p>
                 <p className="text-3xl font-extrabold text-green-400">{result.summary.potentialSavingsMB.toFixed(2)} MB</p>
             </div>
         </div>
+        
+        {lastActionMessage && (
+            <div className="bg-green-900/30 border border-green-700 text-green-300 px-4 py-3 rounded-lg relative mb-6 flex items-center" role="alert">
+                <CheckCircleIcon className="w-5 h-5 mr-3"/>
+                <span className="block sm:inline">{lastActionMessage}</span>
+            </div>
+        )}
         
         {allPairs.length > 0 && (
             <div className="bg-black/50 border border-green-800 rounded-lg p-3 mb-6 flex items-center justify-between sticky top-4 z-10 backdrop-blur-sm">

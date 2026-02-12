@@ -9,6 +9,8 @@ export interface DashboardStats {
   imageDuplicates: number;
   documentDuplicates: number;
   storageSavedTB: number;
+  scannedPerType: { video: number; image: number; document: number };
+  savedPerTypeTB: { video: number; image: number; document: number };
 }
 
 export interface StorageSource {

@@ -3,43 +3,20 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getFileDetails } from '../services/api';
 import { analyzeVideoFrames, groundedQuery } from '../services/gemini';
+import { extractFrames } from '../utils/video';
 import type { AnyFile, VideoFile, ImageFile, DocumentFile, EnrichedVideoMetadata } from '../types';
 import Spinner from '../components/Spinner';
 import { ArrowLeftIcon, CheckCircleIcon, TrashIcon } from '../components/Icons';
 import Button from '../components/Button';
+import { DetailItem } from '../components/DetailViews';
 
 // --- Shared Components ---
-const DetailItem: React.FC<{ label: string; value: React.ReactNode; mono?: boolean, highlight?: boolean }> = ({ label, value, mono, highlight }) => (
-  <div>
-    <dt className="text-sm font-semibold text-green-600">{label}</dt>
-    <dd className={`mt-1 text-sm break-words ${mono ? 'font-mono' : ''} ${highlight ? 'text-green-300 bg-green-900/50 p-1 rounded' : 'text-green-400'}`}>{value}</dd>
-  </div>
-);
-
-const AnalysisItem: React.FC<{ label: string; value?: React.ReactNode; confidence: number; mono?: boolean }> = ({ label, value, confidence, mono }) => {
-    const confidenceColor = 'bg-green-500';
+const ActionPanel: React.FC<{ fileToDelete: AnyFile, onDelete: (file: AnyFile) => void }> = ({ fileToDelete, onDelete }) => {
     return (
-        <div>
-            <div className="flex justify-between items-center mb-1">
-                <dt className="text-sm font-semibold text-green-600">{label}</dt>
-                <dd className="text-sm font-bold text-green-400">{confidence}%</dd>
-            </div>
-            <div className="w-full bg-green-900 rounded-full h-1" title={`${confidence}% confidence`}><div className={`${confidenceColor} h-1 rounded-full`} style={{ width: `${confidence}%` }}></div></div>
-            {value && <div className={`mt-1.5 text-sm text-green-500 truncate ${mono ? 'font-mono' : ''}`} title={typeof value === 'string' ? value : undefined}>{value}</div>}
-        </div>
-    );
-};
-
-const ActionPanel: React.FC<{ fileToKeep: AnyFile, fileToDelete: AnyFile, onDelete: (file: AnyFile) => void }> = ({ fileToKeep, fileToDelete, onDelete }) => {
-    return (
-        <div className="bg-black border border-green-800 rounded-lg p-3 mt-4 grid grid-cols-2 gap-3">
-             <Button variant="primary" className="text-xs" onClick={() => onDelete(fileToDelete)}>
+        <div className="bg-black border border-green-800 rounded-lg p-3 mt-4">
+             <Button variant="primary" className="text-sm w-full" onClick={() => onDelete(fileToDelete)}>
                 <CheckCircleIcon className="h-4 w-4 mr-2" />
-                Keep This
-            </Button>
-            <Button variant="secondary" className="text-xs bg-red-900/50 hover:bg-red-900 border-red-800 text-red-300 hover:text-red-200 focus:ring-red-500" onClick={() => onDelete(fileToDelete)}>
-                <TrashIcon className="h-4 w-4 mr-2" />
-                Delete Other
+                Keep This File
             </Button>
         </div>
     )
@@ -85,6 +62,7 @@ const FILENAME_TEMPLATE = "{title} ({year})"; // In a real app, this would come 
 const EnrichmentPanel: React.FC<{ file: VideoFile }> = ({ file }) => {
     const [suggestions, setSuggestions] = useState<EnrichedVideoMetadata | null>(null);
     const [loading, setLoading] = useState(false);
+    const [status, setStatus] = useState('');
     const [isApplied, setIsApplied] = useState(false);
     const [error, setError] = useState('');
 
@@ -97,7 +75,6 @@ const EnrichmentPanel: React.FC<{ file: VideoFile }> = ({ file }) => {
     useEffect(() => {
         if(suggestions) {
             setManualTitle(suggestions.title);
-            // Smartly decide if renaming is needed
             const currentName = file.name.replace(/\.[^/.]+$/, "").replace(/_/g, " ");
             const suggestedTitle = suggestions.title.replace(/_/g, " ");
             if (currentName.toLowerCase().includes(suggestedTitle.toLowerCase()) || suggestedTitle.toLowerCase().includes(currentName.toLowerCase())) {
@@ -106,73 +83,28 @@ const EnrichmentPanel: React.FC<{ file: VideoFile }> = ({ file }) => {
         }
     }, [suggestions, file.name]);
     
-     const extractFrames = (duration: number): Promise<{ data: string, mimeType: string }[]> => {
-        return new Promise((resolve, reject) => {
-            const video = videoRef.current;
-            const canvas = canvasRef.current;
-            if (!video || !canvas) return reject(new Error("Video or Canvas not ready"));
-
-            const frames: { data: string, mimeType: string }[] = [];
-            const timestamps = [duration * 0.2, duration * 0.5, duration * 0.8];
-            let index = 0;
-            
-            const seekListener = () => {
-                if(index < timestamps.length) {
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-                    canvas.getContext('2d')?.drawImage(video, 0, 0, canvas.width, canvas.height);
-                    frames.push({ data: canvas.toDataURL('image/jpeg', 0.8), mimeType: 'image/jpeg' });
-                    index++;
-                    if(index < timestamps.length) {
-                        video.currentTime = timestamps[index];
-                    } else {
-                        video.removeEventListener('seeked', seekListener);
-                        resolve(frames);
-                    }
-                }
-            };
-
-            const loadedMetadataListener = () => {
-                 video.addEventListener('seeked', seekListener);
-                 video.currentTime = timestamps[index];
-            };
-
-            video.addEventListener('loadedmetadata', loadedMetadataListener, { once: true });
-            
-            if (video.readyState >= 1) { // If metadata already loaded
-                loadedMetadataListener();
-            }
-        });
-    };
-
     const handleEnrich = async () => {
+        if (!videoRef.current || !canvasRef.current) return;
         setLoading(true);
         setIsApplied(false);
         setSuggestions(null);
         setError('');
         
-        if (!videoRef.current) {
-            setLoading(false);
-            setError("Video element ref is not available.");
-            return;
-        }
-
         try {
-            const frames = await extractFrames(videoRef.current.duration);
-            if (frames.length === 0) throw new Error("Could not extract any frames from the video.");
+            setStatus('Extracting frames...');
+            const frames = await extractFrames(videoRef.current, canvasRef.current, 3);
+            if (frames.length === 0) throw new Error("Could not extract any frames.");
 
+            setStatus('Analyzing video...');
             const prompt = `Analyze the video frames. The current filename is "${file.name}". Suggest a proper title, a short plot summary, potential actors, and a genre. Respond ONLY with a valid JSON object with keys: "title", "plot", "actors" (string array), "genre" (string), and "releaseDate" (YYYY-MM-DD string, or empty string if unknown).`;
             const response = await analyzeVideoFrames(prompt, frames);
             
             let jsonString = response.text.trim();
-            if (jsonString.startsWith('```json')) {
-                jsonString = jsonString.substring(7, jsonString.length - 3).trim();
-            } else if (jsonString.startsWith('```')) {
-                 jsonString = jsonString.substring(3, jsonString.length - 3).trim();
-            }
-            
+            if (jsonString.startsWith('```json')) jsonString = jsonString.substring(7, jsonString.length - 3).trim();
+            else if (jsonString.startsWith('```')) jsonString = jsonString.substring(3, jsonString.length - 3).trim();
             const data = JSON.parse(jsonString);
 
+            setStatus('Verifying with web search...');
             const searchQuery = `"${data.title}" ${data.releaseDate ? `(${data.releaseDate.split('-')[0]})` : ''} movie details`;
             const searchResponse = await groundedQuery(searchQuery);
             const firstWebResult = searchResponse.candidates?.[0]?.groundingMetadata?.groundingChunks?.find((c: any) => c.web)?.web;
@@ -194,26 +126,20 @@ const EnrichmentPanel: React.FC<{ file: VideoFile }> = ({ file }) => {
             setError("Failed to analyze video. Please check your API key and network connection.");
         } finally {
             setLoading(false);
+            setStatus('');
         }
     };
 
     const handleApply = () => {
-        // Here you would make an API call to save the changes
-        console.log("Applying changes:", { fileId: file.id, selectedChanges, manualTitle });
         setIsApplied(true);
     };
 
     const suggestedFilename = useMemo(() => {
         if (!suggestions) return '';
         const year = suggestions.releaseDate ? suggestions.releaseDate.split('-')[0] : 'N/A';
-        const cleanTitle = manualTitle.replace(/[^\w\s]/gi, '').replace(/\s+/g, '.');
-
-        return FILENAME_TEMPLATE
-            .replace('{title}', cleanTitle)
-            .replace('{year}', year)
-            .replace('{resolution}', file.resolution) // Assuming file is available
-            + '.mp4'; // Add extension
-    }, [suggestions, manualTitle, file.resolution]);
+        const cleanTitle = manualTitle.replace(/[^\w\s.-]/gi, '').replace(/\s+/g, '.');
+        return FILENAME_TEMPLATE.replace('{title}', cleanTitle).replace('{year}', year) + '.mp4';
+    }, [suggestions, manualTitle]);
 
     if (isApplied) {
         return <div className="bg-black border border-green-800 rounded-lg p-4 mt-4 text-center">
@@ -230,16 +156,16 @@ const EnrichmentPanel: React.FC<{ file: VideoFile }> = ({ file }) => {
                 {!suggestions ? (
                     <>
                         <h3 className="text-lg font-bold text-green-400 mb-2">Enrich Metadata</h3>
-                        <p className="text-sm text-green-600 mb-4">Use AI to analyze the video and fetch rich metadata like title, plot, and actors from online databases.</p>
+                        <p className="text-sm text-green-600 mb-4">Use AI to scan the video and fetch rich metadata like title, plot, and actors.</p>
                         {error && <p className="text-sm text-red-400 mb-4">{error}</p>}
                         <Button onClick={handleEnrich} disabled={loading} className="w-full">
-                            {loading ? <Spinner /> : 'Find & Suggest Metadata'}
+                            {loading ? <><Spinner /><span className="ml-2">{status}</span></> : 'Find & Suggest Metadata'}
                         </Button>
                     </>
                 ) : (
                     <>
                         <h3 className="text-lg font-bold text-green-400 mb-2">Enrichment Suggestions</h3>
-                        <p className="text-sm text-green-600 mb-4">Review and apply suggested changes. Source: <a href={suggestions.source.url} target="_blank" rel="noopener noreferrer" className="text-green-400 hover:underline">{suggestions.source.name}</a></p>
+                        <p className="text-sm text-green-600 mb-4">Source: <a href={suggestions.source.url} target="_blank" rel="noopener noreferrer" className="text-green-400 hover:underline">{suggestions.source.name}</a></p>
                         <div className="space-y-3 text-sm">
                             <div>
                                 <label className="flex items-center"><input type="checkbox" checked={selectedChanges.title} onChange={e => setSelectedChanges({...selectedChanges, title: e.target.checked})} className="h-4 w-4 rounded bg-gray-900 border-green-700 text-green-500 focus:ring-green-500" /> <span className="ml-2 text-green-600">Title</span></label>
@@ -248,10 +174,6 @@ const EnrichmentPanel: React.FC<{ file: VideoFile }> = ({ file }) => {
                             <div>
                                 <label className="flex items-center"><input type="checkbox" checked={selectedChanges.plot} onChange={e => setSelectedChanges({...selectedChanges, plot: e.target.checked})} className="h-4 w-4 rounded bg-gray-900 border-green-700 text-green-500 focus:ring-green-500" /> <span className="ml-2 text-green-600">Plot Summary</span></label>
                                 <p className="text-green-500 mt-1 p-2 bg-green-900/20 rounded">{suggestions.plot}</p>
-                            </div>
-                            <div>
-                                <label className="flex items-center"><input type="checkbox" checked={selectedChanges.genre} onChange={e => setSelectedChanges({...selectedChanges, genre: e.target.checked})} className="h-4 w-4 rounded bg-gray-900 border-green-700 text-green-500 focus:ring-green-500" /> <span className="ml-2 text-green-600">Genre</span></label>
-                                <p className="text-green-500 mt-1 p-2 bg-green-900/20 rounded">{suggestions.genre}</p>
                             </div>
                              <hr className="border-green-800" />
                             <div>
@@ -277,7 +199,7 @@ const VideoColumn: React.FC<{ file: VideoFile, original: VideoFile, onDelete: (f
         </div>
         <h2 className="text-2xl font-extrabold text-green-400 mt-4 truncate">{file.name}</h2>
         <p className="text-sm text-green-600 font-mono break-all">{file.path}</p>
-        <ActionPanel fileToKeep={file} fileToDelete={original} onDelete={onDelete} />
+        <ActionPanel fileToDelete={original} onDelete={onDelete} />
         <div className="bg-black border border-green-800 rounded-lg p-4 mt-4">
             <h3 className="text-lg font-bold text-green-400 border-b border-green-800 pb-2 mb-3">File Metadata</h3>
             <dl className="grid grid-cols-2 gap-x-4 gap-y-4">
@@ -286,24 +208,6 @@ const VideoColumn: React.FC<{ file: VideoFile, original: VideoFile, onDelete: (f
                 <DetailItem label="Resolution" value={file.resolution} mono highlight={file.resolution !== original.resolution} />
                 <DetailItem label="Codec" value={file.codec} highlight={file.codec !== original.codec} />
             </dl>
-        </div>
-         <div className="bg-black border border-green-800 rounded-lg p-4 mt-4">
-            <h3 className="text-lg font-bold text-green-400 border-b border-green-800 pb-2 mb-3">Enriched Data</h3>
-            <dl className="grid grid-cols-1 gap-y-4">
-                <DetailItem label="Title" value={file.enrichedData.title} highlight={file.enrichedData.title !== original.enrichedData.title} />
-                <DetailItem label="Plot" value={file.enrichedData.plot} highlight={file.enrichedData.plot !== original.enrichedData.plot} />
-                <DetailItem label="Genre" value={file.enrichedData.genre} highlight={file.enrichedData.genre !== original.enrichedData.genre} />
-            </dl>
-        </div>
-        <div className="bg-black border border-green-800 rounded-lg p-4 mt-4">
-            <h3 className="text-lg font-bold text-green-400 border-b border-green-800 pb-2 mb-3">AI Analysis</h3>
-            <div className="space-y-4">
-                <AnalysisItem label="pHash" value={file.analysis.pHash.value} confidence={file.analysis.pHash.confidence} mono />
-                <AnalysisItem label="dHash" value={file.analysis.dHash.value} confidence={file.analysis.dHash.confidence} mono />
-                <AnalysisItem label="Audio Fingerprint" value={file.analysis.audioFingerprint.value} confidence={file.analysis.audioFingerprint.confidence} mono />
-                <AnalysisItem label="Scene Embeddings" confidence={file.analysis.sceneEmbeddings.confidence} />
-                <AnalysisItem label="Face Clusters" value={`${file.analysis.faceClusters.value} clusters`} confidence={file.analysis.faceClusters.confidence} />
-            </div>
         </div>
         <EnrichmentPanel file={file} />
     </div>
@@ -320,7 +224,7 @@ const ImageColumn: React.FC<{ file: ImageFile, original: ImageFile, onDelete: (f
             </div>
             <h2 className="text-2xl font-extrabold text-green-400 mt-4 truncate">{file.name}</h2>
             <p className="text-sm text-green-600 font-mono break-all">{file.path}</p>
-            <ActionPanel fileToKeep={file} fileToDelete={original} onDelete={onDelete} />
+            <ActionPanel fileToDelete={original} onDelete={onDelete} />
             <div className="bg-black border border-green-800 rounded-lg p-4 mt-4">
                 <h3 className="text-lg font-bold text-green-400 border-b border-green-800 pb-2 mb-3">EXIF Data</h3>
                 <dl className="grid grid-cols-2 gap-x-4 gap-y-4">
@@ -329,14 +233,6 @@ const ImageColumn: React.FC<{ file: ImageFile, original: ImageFile, onDelete: (f
                     <DetailItem label="Date Taken" value={new Date(file.exif.dateTaken).toLocaleString()} highlight={file.exif.dateTaken !== original.exif.dateTaken} />
                     <DetailItem label="ISO" value={file.exif.iso} highlight={file.exif.iso !== original.exif.iso} />
                 </dl>
-            </div>
-            <div className="bg-black border border-green-800 rounded-lg p-4 mt-4">
-                <h3 className="text-lg font-bold text-green-400 border-b border-green-800 pb-2 mb-3">AI Analysis</h3>
-                <div className="space-y-4">
-                    <AnalysisItem label="pHash" value={file.analysis.pHash.value} confidence={file.analysis.pHash.confidence} mono />
-                    <AnalysisItem label="dHash" value={file.analysis.dHash.value} confidence={file.analysis.dHash.confidence} mono />
-                    <AnalysisItem label="Object Tags" value={file.analysis.objectTags.value.join(', ')} confidence={file.analysis.objectTags.confidence} />
-                </div>
             </div>
         </div>
     );
@@ -350,18 +246,16 @@ const DocumentColumn: React.FC<{ file: DocumentFile, original: DocumentFile, onD
             {file.pageCount !== original.pageCount && <span className="flex-shrink-0 ml-2 bg-green-900/80 text-green-300 text-sm font-bold px-2 py-1 rounded-full">{file.pageCount} pages</span>}
         </div>
         <p className="text-sm text-green-600 font-mono break-all mb-4">{file.path}</p>
-        <ActionPanel fileToKeep={file} fileToDelete={original} onDelete={onDelete} />
+        <ActionPanel fileToDelete={original} onDelete={onDelete} />
         <dl className="grid grid-cols-2 gap-x-4 gap-y-4 my-4">
             <DetailItem label="Size" value={`${file.sizeMB} MB`} highlight={file.sizeMB !== original.sizeMB} />
             <DetailItem label="Page Count" value={file.pageCount} highlight={file.pageCount !== original.pageCount} />
-            <DetailItem label="Word Count" value={file.wordCount} highlight={file.wordCount !== original.wordCount} />
-            <DetailItem label="Author" value={file.author} highlight={file.author !== original.author} />
         </dl>
         <div className="bg-black rounded-lg p-3 text-sm text-green-500 flex-grow overflow-y-auto font-mono h-96">
            {showDiff ? (
-            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit... <span className="bg-red-900/50 text-red-300 line-through">Vestibulum ante ipsum primis in faucibus</span> orci luctus et ultrices posuere cubilia Curae; <span className="bg-green-900/50 text-green-300">This is an added sentence for clarity.</span> Donec velit neque, auctor sit amet aliquam vel, ullamcorper sit amet ligula. Curabitur arcu erat, accumsan id imperdiet et, porttitor at sem.</p>
+            <p>Lorem ipsum dolor... <span className="bg-red-900/50 text-red-300 line-through">old text</span> <span className="bg-green-900/50 text-green-300">new text</span></p>
            ) : (
-            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit... Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Donec velit neque, auctor sit amet aliquam vel, ullamcorper sit amet ligula. Curabitur arcu erat, accumsan id imperdiet et, porttitor at sem.</p>
+            <p>{file.content}</p>
            )}
         </div>
     </div>
@@ -385,16 +279,11 @@ const ComparisonPage: React.FC = () => {
         }
     }, [fileId1, fileId2]);
 
-    const handleDeleteRequest = (file: AnyFile) => {
-        setConfirmingDelete(file);
-    };
-
+    const handleDeleteRequest = (file: AnyFile) => setConfirmingDelete(file);
     const handleConfirmDelete = () => {
         if (confirmingDelete) {
-            console.log(`Deleting file: ${confirmingDelete.id}`);
-            alert(`File "${confirmingDelete.name}" has been marked for deletion.`);
             setConfirmingDelete(null);
-            navigate(-1); // Go back after deletion
+            navigate(-1);
         }
     };
 

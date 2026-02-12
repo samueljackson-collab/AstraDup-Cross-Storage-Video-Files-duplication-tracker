@@ -11,42 +11,9 @@ import {
 } from '../components/Icons';
 import Button from '../components/Button';
 import { FilmIcon, PhotoIcon, DocumentTextIcon } from '../components/FileTypeIcons';
+import { DetailItem, AnalysisItem } from '../components/DetailViews';
 
 // --- HELPER COMPONENTS (CONSOLIDATED) ---
-
-const DetailItem: React.FC<{ label: string; value: React.ReactNode; mono?: boolean }> = ({ label, value, mono }) => (
-  <div>
-    <dt className="text-base font-semibold text-green-600">{label}</dt>
-    <dd className={`mt-1 text-base text-green-400 ${mono ? 'font-mono' : ''}`}>{value}</dd>
-  </div>
-);
-
-const AnalysisItem: React.FC<{ label: string; value?: string | number | React.ReactNode; confidence: number; mono?: boolean }> = ({ label, value, confidence, mono }) => {
-    const getConfidenceColors = (score: number) => {
-        if (score >= 95) return { text: 'text-green-400', bg: 'bg-green-500' };
-        if (score >= 80) return { text: 'text-yellow-400', bg: 'bg-yellow-500' };
-        return { text: 'text-orange-400', bg: 'bg-orange-500' };
-    };
-    const { text: textColor, bg: bgColor } = getConfidenceColors(confidence);
-
-    return (
-        <div>
-            <div className="flex justify-between items-baseline mb-1">
-                <dt className="text-base font-semibold text-green-600">{label}</dt>
-                <dd className={`text-2xl font-extrabold ${textColor}`}>{confidence}%</dd>
-            </div>
-            {value != null && (
-                 <div className={`text-sm text-green-500 truncate mb-2 ${mono ? 'font-mono' : ''}`} title={typeof value === 'string' || typeof value === 'number' ? String(value) : undefined}>
-                    {value}
-                 </div>
-            )}
-            <div className="w-full bg-green-900 rounded-full h-1.5" title={`${confidence}% confidence`}>
-                <div className={`${bgColor} h-1.5 rounded-full`} style={{ width: `${confidence}%` }}></div>
-            </div>
-        </div>
-    );
-};
-
 const DuplicateItem: React.FC<{ currentFileId: string; duplicate: AnyFile; onMarkAsNotDuplicate: (duplicateId: string) => void; }> = ({ currentFileId, duplicate, onMarkAsNotDuplicate }) => {
     const FileTypeIcon = {
         video: FilmIcon,
@@ -151,24 +118,6 @@ const CustomVideoPlayer: React.FC<{file: VideoFile}> = ({ file }) => {
         }
     }, []);
 
-    const handleTimeUpdate = () => {
-        if (videoRef.current) {
-            setCurrentTime(videoRef.current.currentTime);
-        }
-    };
-    
-    const handleLoadedMetadata = () => {
-        if (videoRef.current) {
-            setDuration(videoRef.current.duration);
-        }
-    };
-
-    const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (videoRef.current) {
-            videoRef.current.currentTime = Number(e.target.value);
-        }
-    };
-
     const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newVolume = Number(e.target.value);
         if(videoRef.current) videoRef.current.volume = newVolume;
@@ -202,17 +151,20 @@ const CustomVideoPlayer: React.FC<{file: VideoFile}> = ({ file }) => {
         const video = videoRef.current;
         if (!video) return;
         
+        const handleTimeUpdate = () => setCurrentTime(video.currentTime);
+        const handleLoadedMetadata = () => setDuration(video.duration);
+        const handleEnded = () => setIsPlaying(false);
+        const onFullscreenChange = () => setIsFullScreen(!!document.fullscreenElement);
+
         video.addEventListener('timeupdate', handleTimeUpdate);
         video.addEventListener('loadedmetadata', handleLoadedMetadata);
-        video.addEventListener('ended', () => setIsPlaying(false));
-        
-        const onFullscreenChange = () => setIsFullScreen(!!document.fullscreenElement);
+        video.addEventListener('ended', handleEnded);
         document.addEventListener('fullscreenchange', onFullscreenChange);
 
         return () => {
             video.removeEventListener('timeupdate', handleTimeUpdate);
             video.removeEventListener('loadedmetadata', handleLoadedMetadata);
-            video.removeEventListener('ended', () => setIsPlaying(false));
+            video.removeEventListener('ended', handleEnded);
             document.removeEventListener('fullscreenchange', onFullscreenChange);
         };
     }, []);
@@ -246,7 +198,7 @@ const CustomVideoPlayer: React.FC<{file: VideoFile}> = ({ file }) => {
                     min="0"
                     max={duration || 0}
                     value={currentTime}
-                    onChange={handleSeek}
+                    onChange={(e) => { if (videoRef.current) videoRef.current.currentTime = Number(e.target.value); }}
                     className="w-full h-1 bg-green-900/50 rounded-lg appearance-none cursor-pointer range-sm"
                     style={{ backgroundSize: `${progressPercent}% 100%` }}
                 />

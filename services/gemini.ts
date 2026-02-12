@@ -3,10 +3,6 @@ import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 
 const API_KEY = process.env.API_KEY;
 
-if (!API_KEY) {
-    console.warn("API_KEY environment variable not set. App may not function correctly.");
-}
-
 const ai = new GoogleGenAI({ apiKey: API_KEY! });
 
 // --- Helper Functions ---

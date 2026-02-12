@@ -6,7 +6,7 @@ import Spinner from '../components/Spinner';
 import Button from '../components/Button';
 import { startScan } from '../services/api';
 import type { ScanResult, StorageSource, FileType } from '../types';
-import { HardDriveIcon, ServerIcon, GoogleDriveIcon, DropboxIcon, OneDriveIcon, CheckCircleIcon } from '../components/Icons';
+import { HardDriveIcon, ServerIcon, GoogleDriveIcon, DropboxIcon, OneDriveIcon, CheckCircleIcon, XCircleIcon } from '../components/Icons';
 import { FilmIcon, PhotoIcon, DocumentTextIcon } from '../components/FileTypeIcons';
 
 type ScanPhase = 'type_selection' | 'source_selection' | 'scanning' | 'complete';
@@ -106,6 +106,7 @@ const ScanPage: React.FC = () => {
   const [etr, setEtr] = useState('');
   const [scanStartTime, setScanStartTime] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
 
   useEffect(() => {
     let interval: number | undefined;
@@ -134,6 +135,7 @@ const ScanPage: React.FC = () => {
   const handleSelectScanType = (type: FileType) => {
     setScanType(type);
     setScanPhase('source_selection');
+    setScanError(null);
   };
 
   const handleToggleSource = (sourceId: string) => {
@@ -157,9 +159,7 @@ const ScanPage: React.FC = () => {
   const handleStartScan = async (enabledDatabases: string[]) => {
     setIsModalOpen(false);
     if (selectedSources.size === 0 || !scanType) return;
-
-    console.log('Starting scan with enabled databases:', enabledDatabases);
-
+    setScanError(null);
     setScanPhase('scanning');
     setScanResult(null);
     setProgress(0);
@@ -173,7 +173,7 @@ const ScanPage: React.FC = () => {
       setScanPhase('complete');
     } catch (error) {
       console.error('Scan failed:', error);
-      alert('An error occurred during the scan.');
+      setScanError('An error occurred during the scan. Please try again.');
       setScanPhase('source_selection');
     } finally {
         setScanStartTime(null);
@@ -188,6 +188,7 @@ const ScanPage: React.FC = () => {
     setScanType(null);
     setProgress(0);
     setEtr('');
+    setScanError(null);
   };
   
   const renderContent = () => {
@@ -203,6 +204,12 @@ const ScanPage: React.FC = () => {
         case 'source_selection':
             return (
                 <>
+                  {scanError && (
+                    <div className="bg-red-900/20 border border-red-800 text-red-300 px-4 py-3 rounded-lg relative mb-6 flex items-center" role="alert">
+                        <XCircleIcon className="w-5 h-5 mr-3"/>
+                        <span className="block sm:inline">{scanError}</span>
+                    </div>
+                  )}
                   <StorageSelector
                     sources={ALL_STORAGE_SOURCES}
                     cloudSourceTypes={CLOUD_SOURCE_TYPES}

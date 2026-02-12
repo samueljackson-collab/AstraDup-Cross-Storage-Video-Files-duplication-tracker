@@ -55,14 +55,23 @@ export const getDashboardStats = (): Promise<DashboardStats> => {
         videoDuplicates: 128,
         imageDuplicates: 312,
         documentDuplicates: 45,
-        storageSavedTB: 3.8
+        storageSavedTB: 3.8,
+        scannedPerType: {
+            video: 2173, // ~40%
+            image: 2716, // ~50%
+            document: 543 // ~10%
+        },
+        savedPerTypeTB: {
+            video: 2.66, // ~70%
+            image: 0.76, // ~20%
+            document: 0.38 // ~10%
+        }
       });
     }, 500);
   });
 };
 
 export const startScan = (sources: string[], scanType: FileType): Promise<ScanResult> => {
-  console.log(`Starting ${scanType} scan for sources:`, sources);
   return new Promise(resolve => {
     setTimeout(() => {
       const relevantPairs = MOCK_DUPLICATE_PAIRS.filter(p => p.file1.fileType === scanType);
@@ -104,7 +113,6 @@ export const getDuplicatesForFile = (fileId: string): Promise<AnyFile[]> => {
 };
 
 export const enrichVideoMetadata = (fileId: string): Promise<EnrichedVideoMetadata> => {
-    console.log(`Enriching metadata for ${fileId}`);
     return new Promise(resolve => {
         setTimeout(() => {
             resolve({

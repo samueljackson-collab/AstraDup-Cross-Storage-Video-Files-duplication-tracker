@@ -1,6 +1,5 @@
 
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { getDashboardStats } from '../services/api';
 import type { DashboardStats, FileType } from '../types';
 import Spinner from '../components/Spinner';
@@ -53,22 +52,22 @@ const Dashboard: React.FC = () => {
     if (filter === 'all') return [
         { title: "Files Scanned", value: stats.filesScanned.toLocaleString(), desc: "Total files analyzed" },
         { title: "Total Duplicates", value: (stats.videoDuplicates + stats.imageDuplicates + stats.documentDuplicates).toLocaleString(), desc: "All duplicate sets found" },
-        { title: "Storage Saved", value: stats.storageSavedTB, unit: "TB", desc: "Potential space to be reclaimed" },
+        { title: "Storage Saved", value: stats.storageSavedTB.toFixed(2), unit: "TB", desc: "Potential space to be reclaimed" },
     ];
     if (filter === 'video') return [
-        { title: "Videos Scanned", value: (stats.filesScanned * 0.4).toLocaleString(undefined, {maximumFractionDigits: 0}), desc: "Total videos analyzed" },
+        { title: "Videos Scanned", value: stats.scannedPerType.video.toLocaleString(), desc: "Total videos analyzed" },
         { title: "Video Duplicates", value: stats.videoDuplicates.toLocaleString(), desc: "Duplicate video sets found" },
-        { title: "Video Storage Saved", value: (stats.storageSavedTB * 0.7).toFixed(2), unit: "TB", desc: "Potential space from videos" },
+        { title: "Video Storage Saved", value: stats.savedPerTypeTB.video.toFixed(2), unit: "TB", desc: "Potential space from videos" },
     ];
     if (filter === 'image') return [
-        { title: "Images Scanned", value: (stats.filesScanned * 0.5).toLocaleString(undefined, {maximumFractionDigits: 0}), desc: "Total images analyzed" },
+        { title: "Images Scanned", value: stats.scannedPerType.image.toLocaleString(), desc: "Total images analyzed" },
         { title: "Image Duplicates", value: stats.imageDuplicates.toLocaleString(), desc: "Duplicate image sets found" },
-        { title: "Image Storage Saved", value: (stats.storageSavedTB * 0.2).toFixed(2), unit: "TB", desc: "Potential space from images" },
+        { title: "Image Storage Saved", value: stats.savedPerTypeTB.image.toFixed(2), unit: "TB", desc: "Potential space from images" },
     ];
     if (filter === 'document') return [
-        { title: "Docs Scanned", value: (stats.filesScanned * 0.1).toLocaleString(undefined, {maximumFractionDigits: 0}), desc: "Total documents analyzed" },
+        { title: "Docs Scanned", value: stats.scannedPerType.document.toLocaleString(), desc: "Total documents analyzed" },
         { title: "Doc Duplicates", value: stats.documentDuplicates.toLocaleString(), desc: "Duplicate document sets found" },
-        { title: "Doc Storage Saved", value: (stats.storageSavedTB * 0.1).toFixed(2), unit: "TB", desc: "Potential space from docs" },
+        { title: "Doc Storage Saved", value: stats.savedPerTypeTB.document.toFixed(2), unit: "TB", desc: "Potential space from docs" },
     ];
     return [];
   };

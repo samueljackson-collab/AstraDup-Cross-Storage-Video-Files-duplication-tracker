@@ -19,7 +19,7 @@ const App: React.FC = () => {
           <Route path="analyzer" element={<AnalyzerPage />} />
           <Route path="file/:fileId" element={<FileDetail />} />
           <Route path="settings" element={<Settings />} />
-          <Route path="/compare/:fileId1/:fileId2" element={<ComparisonPage />} />
+          <Route path="compare/:fileId1/:fileId2" element={<ComparisonPage />} />
         </Route>
       </Routes>
     </HashRouter>
