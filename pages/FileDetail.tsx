@@ -111,41 +111,33 @@ const CustomVideoPlayer: React.FC<{file: VideoFile}> = ({ file }) => {
     const togglePlayPause = useCallback(() => {
         if (videoRef.current?.paused) {
             videoRef.current?.play();
-            setIsPlaying(true);
         } else {
             videoRef.current?.pause();
-            setIsPlaying(false);
         }
     }, []);
 
     const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newVolume = Number(e.target.value);
-        if(videoRef.current) videoRef.current.volume = newVolume;
-        setVolume(newVolume);
-        if (newVolume > 0 && isMuted) {
-            setIsMuted(false);
-            if(videoRef.current) videoRef.current.muted = false;
+        if(videoRef.current) {
+            videoRef.current.volume = newVolume;
+            videoRef.current.muted = newVolume === 0;
         }
     };
     
-    const toggleMute = () => {
+    const toggleMute = useCallback(() => {
         if(videoRef.current) {
-            videoRef.current.muted = !isMuted;
-            setIsMuted(!isMuted);
-            if(!isMuted && volume === 0) setVolume(1);
+            videoRef.current.muted = !videoRef.current.muted;
         }
-    };
+    }, []);
 
-    const toggleFullScreen = () => {
+    const toggleFullScreen = useCallback(() => {
         if (!containerRef.current) return;
         if (!document.fullscreenElement) {
             containerRef.current.requestFullscreen();
-            setIsFullScreen(true);
         } else {
             document.exitFullscreen();
-            setIsFullScreen(false);
         }
-    };
+    }, []);
     
     useEffect(() => {
         const video = videoRef.current;
@@ -153,26 +145,72 @@ const CustomVideoPlayer: React.FC<{file: VideoFile}> = ({ file }) => {
         
         const handleTimeUpdate = () => setCurrentTime(video.currentTime);
         const handleLoadedMetadata = () => setDuration(video.duration);
-        const handleEnded = () => setIsPlaying(false);
+        const handlePlay = () => setIsPlaying(true);
+        const handlePause = () => setIsPlaying(false);
         const onFullscreenChange = () => setIsFullScreen(!!document.fullscreenElement);
+        const handleVolumeStateChange = () => {
+            setVolume(video.volume);
+            setIsMuted(video.muted);
+        };
 
         video.addEventListener('timeupdate', handleTimeUpdate);
         video.addEventListener('loadedmetadata', handleLoadedMetadata);
-        video.addEventListener('ended', handleEnded);
+        video.addEventListener('play', handlePlay);
+        video.addEventListener('pause', handlePause);
+        video.addEventListener('ended', handlePause);
+        video.addEventListener('volumechange', handleVolumeStateChange);
         document.addEventListener('fullscreenchange', onFullscreenChange);
+
+        handleVolumeStateChange();
 
         return () => {
             video.removeEventListener('timeupdate', handleTimeUpdate);
             video.removeEventListener('loadedmetadata', handleLoadedMetadata);
-            video.removeEventListener('ended', handleEnded);
+            video.removeEventListener('play', handlePlay);
+            video.removeEventListener('pause', handlePause);
+            video.removeEventListener('ended', handlePause);
+            video.removeEventListener('volumechange', handleVolumeStateChange);
             document.removeEventListener('fullscreenchange', onFullscreenChange);
         };
     }, []);
 
+    useEffect(() => {
+        const playerContainer = containerRef.current;
+        if (!playerContainer) return;
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.target !== playerContainer) return;
+
+            switch (e.code) {
+                case 'Space':
+                    e.preventDefault();
+                    togglePlayPause();
+                    break;
+                case 'KeyM':
+                    toggleMute();
+                    break;
+                case 'KeyF':
+                    toggleFullScreen();
+                    break;
+                case 'ArrowRight':
+                    if (videoRef.current) videoRef.current.currentTime = Math.min(videoRef.current.duration, videoRef.current.currentTime + 5);
+                    break;
+                case 'ArrowLeft':
+                    if (videoRef.current) videoRef.current.currentTime = Math.max(0, videoRef.current.currentTime - 5);
+                    break;
+            }
+        };
+
+        playerContainer.addEventListener('keydown', handleKeyDown);
+        return () => {
+            playerContainer.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [togglePlayPause, toggleMute, toggleFullScreen]);
+
     const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
     
     return (
-        <div ref={containerRef} className="relative aspect-video bg-black rounded-lg group overflow-hidden">
+        <div ref={containerRef} className="relative aspect-video bg-black rounded-lg group overflow-hidden outline-none focus:ring-2 focus:ring-green-500" tabIndex={0}>
             <video 
                 ref={videoRef}
                 onClick={togglePlayPause}

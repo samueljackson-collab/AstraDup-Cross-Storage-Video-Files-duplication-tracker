@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import type { GenerateContentResponse } from '@google/genai';
 import Button from '../components/Button';
@@ -7,14 +6,9 @@ import { FilmIcon, PhotoIcon } from '../components/FileTypeIcons';
 import { GlobeIcon, UploadCloudIcon, SparklesIcon } from '../components/Icons';
 import { analyzeImage, analyzeVideoFrames, groundedQuery } from '../services/gemini';
 import { extractFrames } from '../utils/video';
+import type { GroundingChunk } from '../types';
 
 type AnalyzerTool = 'image' | 'video' | 'web';
-
-// FIX: Made uri and title optional to match the SDK's GroundingChunk type.
-interface GroundingChunk {
-    web?: { uri?: string, title?: string };
-    // other source types can be added here
-}
 
 // --- Shared Components ---
 
@@ -64,7 +58,6 @@ const ResultDisplay: React.FC<{ result: GenerateContentResponse | null; error?: 
                             <h4 className="text-base font-bold text-green-500 mb-2">Sources:</h4>
                             <ul className="space-y-2">
                                 {sources.map((source, index) => (
-                                    // FIX: Added a check for source.web.uri as it's optional.
                                     source.web && source.web.uri && (
                                         <li key={index} className="text-sm">
                                             <a href={source.web.uri} target="_blank" rel="noopener noreferrer" className="text-green-400 hover:underline truncate block">

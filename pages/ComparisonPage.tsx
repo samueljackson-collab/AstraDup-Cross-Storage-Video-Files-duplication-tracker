@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getFileDetails } from '../services/api';
 import { analyzeVideoFrames, groundedQuery } from '../services/gemini';
 import { extractFrames } from '../utils/video';
-import type { AnyFile, VideoFile, ImageFile, DocumentFile, EnrichedVideoMetadata } from '../types';
+import type { AnyFile, VideoFile, ImageFile, DocumentFile, EnrichedVideoMetadata, GroundingChunk } from '../types';
 import Spinner from '../components/Spinner';
 import { ArrowLeftIcon, CheckCircleIcon, TrashIcon } from '../components/Icons';
 import Button from '../components/Button';
@@ -107,7 +106,7 @@ const EnrichmentPanel: React.FC<{ file: VideoFile }> = ({ file }) => {
             setStatus('Verifying with web search...');
             const searchQuery = `"${data.title}" ${data.releaseDate ? `(${data.releaseDate.split('-')[0]})` : ''} movie details`;
             const searchResponse = await groundedQuery(searchQuery);
-            const firstWebResult = searchResponse.candidates?.[0]?.groundingMetadata?.groundingChunks?.find((c: any) => c.web)?.web;
+            const firstWebResult = searchResponse.candidates?.[0]?.groundingMetadata?.groundingChunks?.find((c: GroundingChunk) => c.web)?.web;
 
             const finalSuggestions: EnrichedVideoMetadata = {
                 title: data.title || file.name,

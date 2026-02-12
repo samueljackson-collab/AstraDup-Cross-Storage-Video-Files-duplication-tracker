@@ -1,4 +1,3 @@
-
 import type * as React from 'react';
 
 export type FileType = 'video' | 'image' | 'document';
@@ -116,4 +115,8 @@ export interface EnrichedVideoMetadata {
         name: string;
         url: string;
     };
+}
+
+export interface GroundingChunk {
+    web?: { uri?: string, title?: string };
 }

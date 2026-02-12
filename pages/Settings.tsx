@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Button from '../components/Button';
 import { PlusIcon, TrashIcon, CheckCircleIcon } from '../components/Icons';
@@ -107,7 +106,7 @@ const Settings: React.FC = () => {
         const resultsArray = JSON.parse(jsonString);
         if (Array.isArray(resultsArray)) {
              const newResults = resultsArray.filter(
-                (result: any) => typeof result === 'string' && !databases.some(db => db.name.toLowerCase() === result.toLowerCase())
+                (result: string) => typeof result === 'string' && !databases.some(db => db.name.toLowerCase() === result.toLowerCase())
             );
             setSearchResults(newResults);
             if (newResults.length === 0) setSearchError('No new sources found or all suggestions are already in your list.');

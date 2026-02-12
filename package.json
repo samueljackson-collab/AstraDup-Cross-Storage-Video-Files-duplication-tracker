@@ -1,5 +1,5 @@
 {
-  "name": "astradup:-cross-storage-ai-video-de-duplication-system",
+  "name": "astradup---cross-storage-ai-video-de-duplication-system",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -9,10 +9,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@google/genai": "latest",
-    "react-dom": "^19.2.4",
-    "react": "^19.2.4",
-    "react-router-dom": "^7.13.0"
+    "@google/genai": "0.14.0",
+    "react-dom": "19.2.4",
+    "react": "19.2.4",
+    "react-router-dom": "7.13.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
