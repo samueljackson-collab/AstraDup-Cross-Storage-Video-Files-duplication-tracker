@@ -13,8 +13,7 @@ export default defineConfig(({ mode }) => {
       // WARNING: These values are embedded in the client bundle. For production,
       // proxy API calls through a backend server instead of exposing the key.
       define: {
-        'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
+        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
       },
       resolve: {
         alias: {

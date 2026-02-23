@@ -68,7 +68,6 @@ const Dashboard: React.FC = () => {
         { title: `${label.singular} Duplicates`, value: typeData.duplicatesFound.toLocaleString(), desc: `Duplicate ${label.singular.toLowerCase()} sets found` },
         { title: `${label.singular} Storage Saved`, value: typeData.storageSavedTB.toFixed(2), unit: "TB", desc: `Potential space from ${label.plural.toLowerCase()}` },
     ];
-    return [];
   };
 
   if (loading) return <div className="flex justify-center items-center h-full"><Spinner /></div>;

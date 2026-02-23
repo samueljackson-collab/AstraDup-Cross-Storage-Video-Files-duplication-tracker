@@ -8,7 +8,7 @@ import type { GenerateContentResponse } from "@google/genai";
 // At minimum, restrict this key in the Google Cloud Console:
 //   - Set HTTP referrer restrictions to your domain
 //   - Set daily quota limits to cap potential abuse
-const API_KEY = process.env.API_KEY;
+const API_KEY = process.env.GEMINI_API_KEY;
 
 if (!API_KEY) {
     console.warn('GEMINI_API_KEY not set. AI features will not work. See .env.local.example.');
@@ -47,7 +47,7 @@ export const analyzeImage = async (prompt: string, imageFile: File): Promise<Gen
     const textPart = { text: prompt };
 
     const response = await ai.models.generateContent({
-        model: 'gemini-3-pro-preview',
+        model: 'gemini-2.0-flash',
         contents: { parts: [textPart, imagePart] },
     });
 
@@ -70,7 +70,7 @@ export const analyzeVideoFrames = async (prompt: string, videoFrames: { data: st
     const parts = [textPart, ...imageParts];
 
     const response = await ai.models.generateContent({
-        model: 'gemini-3-pro-preview',
+        model: 'gemini-2.0-flash',
         contents: { parts },
     });
 
@@ -82,7 +82,7 @@ export const analyzeVideoFrames = async (prompt: string, videoFrames: { data: st
  */
 export const groundedQuery = async (prompt: string): Promise<GenerateContentResponse> => {
     const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-2.0-flash',
         contents: prompt,
         config: {
             tools: [{ googleSearch: {} }],
@@ -98,7 +98,7 @@ export const groundedQuery = async (prompt: string): Promise<GenerateContentResp
 export const summarizeText = async (text: string): Promise<GenerateContentResponse> => {
     const prompt = `Summarize the following text into a concise paragraph:\n\n---\n${text}\n---`;
     const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-2.0-flash',
         contents: prompt,
     });
     return response;
