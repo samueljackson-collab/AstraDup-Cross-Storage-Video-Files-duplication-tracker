@@ -64,8 +64,13 @@ Core workflow:
 
 3. **Configure API key**
 
-   Create a `.env.local` file in the project root:
+   Copy the example environment file and add your Gemini API key:
    ```bash
+   cp .env.local.example .env.local
+   ```
+
+   Update `.env.local` with your key:
+   ```dotenv
    GEMINI_API_KEY=your_api_key_here
    ```
 
@@ -216,7 +221,7 @@ astra-dup/
 
 AstraDup uses Gemini models for AI analysis and enrichment. Provide an API key via environment variables:
 
-```bash
+```dotenv
 # .env.local
 GEMINI_API_KEY=your-api-key-here
 ```
