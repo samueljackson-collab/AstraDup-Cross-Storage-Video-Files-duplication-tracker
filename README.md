@@ -41,6 +41,63 @@ Traditional dedup fails in common real-world scenarios:
 
 ---
 
+## Quick Start: Install and Run
+
+### Prerequisites
+- **Node.js 18+** and **npm 9+** — [download here](https://nodejs.org/)
+- A **Gemini API key** for AI features (free at [Google AI Studio](https://aistudio.google.com/app/apikey))
+
+### 1. Clone the Repository
+```bash
+git clone <repository-url>
+cd AstraDup-Cross-Storage-Video-Files-duplication-tracker
+```
+
+### 2. Install Dependencies
+```bash
+npm install
+```
+
+### 3. Configure Environment (for AI features)
+```bash
+cp .env.example .env.local
+# Open .env.local and set: GEMINI_API_KEY=your_key_here
+```
+
+### 4. Run the App
+
+#### Option A — Web Browser (Development)
+```bash
+npm run dev
+```
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+#### Option B — Electron Desktop App
+```bash
+npm run electron:dev
+```
+A native desktop window will open automatically.
+
+### 5. Build for Production
+
+| Target | Command | Output |
+|---|---|---|
+| Web (static) | `npm run build` | `dist/` folder |
+| Windows portable `.exe` | `npm run electron:build:win` | `release/AstraDup-1.0.0-win-x64.exe` |
+| Linux AppImage | `npm run electron:build:linux` | `release/AstraDup-1.0.0.AppImage` |
+| macOS `.dmg` | `npm run electron:build:mac` | `release/AstraDup-1.0.0.dmg` |
+
+> **Note for macOS:** Unsigned `.dmg` builds require right-click → Open on first launch to bypass Gatekeeper.
+
+### Other Useful Commands
+```bash
+npm run type-check   # TypeScript type validation
+npm run test         # Run test suite
+npm run preview      # Preview production build locally
+```
+
+---
+
 ## 2) 📌 Scope and Status
 
 | Area | Status | Notes | Next Milestone |
