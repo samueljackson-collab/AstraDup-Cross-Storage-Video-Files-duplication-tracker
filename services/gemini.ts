@@ -1,9 +1,17 @@
 
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 
-const API_KEY = process.env.API_KEY;
+function getApiKey(): string {
+  return localStorage.getItem('GEMINI_API_KEY') || process.env.API_KEY || '';
+}
 
-const ai = new GoogleGenAI({ apiKey: API_KEY! });
+function getClient(): GoogleGenAI {
+  const key = getApiKey();
+  if (!key) {
+    throw new Error('Gemini API key not configured. Please enter your API key in Settings.');
+  }
+  return new GoogleGenAI({ apiKey: key });
+}
 
 // --- Helper Functions ---
 
@@ -26,6 +34,7 @@ export const fileToBase64 = (file: File): Promise<string> => {
  * Analyzes a single image with a text prompt.
  */
 export const analyzeImage = async (prompt: string, imageFile: File): Promise<GenerateContentResponse> => {
+    const ai = getClient();
     const base64Data = await fileToBase64(imageFile);
     const imagePart = {
         inlineData: {
@@ -47,6 +56,7 @@ export const analyzeImage = async (prompt: string, imageFile: File): Promise<Gen
  * Analyzes multiple image frames from a video with a text prompt.
  */
 export const analyzeVideoFrames = async (prompt: string, videoFrames: { data: string, mimeType: string }[]): Promise<GenerateContentResponse> => {
+    const ai = getClient();
     const textPart = { text: prompt };
     const imageParts = videoFrames.map(frame => ({
         inlineData: {
@@ -54,7 +64,7 @@ export const analyzeVideoFrames = async (prompt: string, videoFrames: { data: st
             mimeType: frame.mimeType
         }
     }));
-    
+
     // The prompt text should be the first part
     const parts = [textPart, ...imageParts];
 
@@ -70,6 +80,7 @@ export const analyzeVideoFrames = async (prompt: string, videoFrames: { data: st
  * Performs a query using Google Search grounding.
  */
 export const groundedQuery = async (prompt: string): Promise<GenerateContentResponse> => {
+    const ai = getClient();
     const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: prompt,
@@ -85,6 +96,7 @@ export const groundedQuery = async (prompt: string): Promise<GenerateContentResp
  * Summarizes a given block of text.
  */
 export const summarizeText = async (text: string): Promise<GenerateContentResponse> => {
+    const ai = getClient();
     const prompt = `Summarize the following text into a concise paragraph:\n\n---\n${text}\n---`;
     const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
