@@ -80,25 +80,30 @@ Traditional dedup fails in common real-world scenarios:
 
 ## 3) 🏗️ Architecture
 
-AstraDup is a Vite + React SPA that uses `HashRouter` and route-level pages for dashboard, scan, comparison, file detail, analyzer, and settings experiences. Page logic delegates to service abstractions: `services/api.ts` simulates scanning/data retrieval and `services/gemini.ts` handles AI requests. Shared type definitions in `types.ts` provide a consistent domain model across pages/components/services. This architecture intentionally preserves clean replacement seams for production APIs while enabling rapid UX iteration in a mock-first environment.
+AstraDup is a Vite + React SPA that uses `HashRouter` and route-level pages for dashboard, scan, comparison, file detail, analyzer, and settings experiences. Page logic delegates to service abstractions: `services/api.ts` simulates scanning/data retrieval and `services/gemini.ts` handles AI requests. Shared type definitions in `types.ts` provide a consistent domain model across pages/components/services. This architecture intentionally preserves clean replacement seams for production APIs while enabling rapid UX iteration in a mock-first environment. The app also ships as a cross-platform Electron desktop application (Windows portable `.exe`, Linux AppImage, macOS `.dmg`) via `vite-plugin-electron`.
 
 ```mermaid
 flowchart LR
-  U[Client/User] --> R[React Routes & Pages]
+  U[Client/User] --> E[Electron Main Process\nelectron/main.ts]
+  E --> R[React Routes & Pages\nRenderer Process]
   R --> C[Shared Components]
   R --> A[services/api.ts\nMock scan/data service]
   R --> G[services/gemini.ts\nGemini analysis service]
   A --> T[types.ts\nShared domain models]
   G --> T
   A --> M[(Mock duplicate datasets)]
+  E --> P[electron/preload.ts\nContext Bridge]
+  P --> R
 ```
 
 | Component | Responsibility | Key Interfaces |
 |---|---|---|
+| `electron/main.ts` | Electron main process — window creation, app lifecycle, USB-portable data path. | `app`, `BrowserWindow`, `shell` from Electron; reads `VITE_DEV_SERVER_URL` in dev. |
+| `electron/preload.ts` | Context bridge — exposes safe platform info to the renderer. | `contextBridge.exposeInMainWorld` with platform/version metadata. |
 | `pages/` | Route-level orchestration for dashboard, scan, comparison, detail, analyzer, settings. | Route mapping in `App.tsx`, state/event handlers, effect lifecycles. |
 | `components/` | Reusable UI controls and display modules. | Prop contracts and callback patterns consumed by pages. |
 | `services/api.ts` | Mock scan lifecycle, duplicate sets, metrics, and details retrieval. | Async methods called from scan/dashboard/detail workflows. |
-| `services/gemini.ts` | AI request wrappers for image/video/web tasks and metadata assistance. | `API_KEY`-backed client helpers with error propagation to UI. |
+| `services/gemini.ts` | AI request wrappers for image/video/web tasks and metadata assistance. | Reads API key from `localStorage` then `process.env.API_KEY`; lazy client init. |
 | `types.ts` | Shared type definitions for file entities and scan/result shapes. | Type imports used across pages, services, and components. |
 
 ### Core Boundaries
@@ -127,10 +132,11 @@ flowchart LR
 ### Project Structure
 ```text
 astra-dup/
-├── App.tsx
-├── index.tsx
-├── index.html
-├── metadata.json
+├── electron/
+│   ├── main.ts              ← Electron main process (window, lifecycle, USB path)
+│   └── preload.ts           ← Context bridge (platform info to renderer)
+├── assets/
+│   └── icon.png             ← App icon for electron-builder
 ├── pages/
 │   ├── Dashboard.tsx
 │   ├── ScanPage.tsx
@@ -155,7 +161,13 @@ astra-dup/
 │   └── gemini.ts
 ├── utils/
 │   └── video.ts
+├── App.tsx
+├── index.tsx
+├── index.html
+├── styles.css               ← Tailwind CSS entry point
 ├── types.ts
+├── metadata.json
+├── .env.example             ← API key template (copy to .env for web/dev mode)
 ├── package.json
 ├── tsconfig.json
 └── vite.config.ts
@@ -169,6 +181,10 @@ astra-dup/
 | React Router DOM | 7.13.0 | Client-side route management |
 | TypeScript | ~5.8.2 | Static typing and safer model evolution |
 | Vite | ^6.2.0 | Dev server and production bundling |
+| Tailwind CSS | ^4.2.2 | Utility-first styling via `@tailwindcss/vite` plugin |
+| Electron | ^33.4.11 | Cross-platform desktop runtime |
+| electron-builder | ^26.8.1 | Cross-platform packaging (portable `.exe`, AppImage, `.dmg`) |
+| vite-plugin-electron | ^0.29.1 | Unified Vite build for renderer + main process |
 | `@google/genai` | 0.14.0 | Gemini API client integration |
 
 ### Architecture Decisions (ADR-Style Summary)
@@ -197,6 +213,8 @@ astra-dup/
 - Optional: stable network connectivity for Gemini-powered actions.
 
 ### Installation and Runtime Commands
+
+#### Web Development
 | Step | Command | Expected Result |
 |---|---|---|
 | Install dependencies | `npm install` | Packages install; `node_modules/` appears. |
@@ -205,6 +223,24 @@ astra-dup/
 | Dev run | `npm run dev` | Vite serves app (default `http://localhost:3000`). |
 | Production build | `npm run build` | `dist/` output is generated. |
 | Production preview | `npm run preview` | Built artifacts are served for manual QA. |
+
+#### Electron Desktop Development
+| Step | Command | Expected Result |
+|---|---|---|
+| Install dependencies | `npm install` | Packages install including Electron and builder. |
+| Dev (Electron + HMR) | `npm run electron:dev` | Vite dev server starts; Electron window opens pointing to it. |
+
+#### Electron Desktop Packaging
+| Step | Command | Output |
+|---|---|---|
+| Build all platforms (current OS) | `npm run electron:build` | `release/` directory with platform artifacts. |
+| Windows portable `.exe` | `npm run electron:build:win` | `release/AstraDup-1.0.0-portable.exe` |
+| Linux AppImage | `npm run electron:build:linux` | `release/AstraDup-1.0.0.AppImage` |
+| macOS `.dmg` | `npm run electron:build:mac` | `release/AstraDup-1.0.0.dmg` (requires macOS host) |
+
+> **USB Portability:** When packaged, app data (settings) is stored in an `AstraDup-Data/` folder next to the executable via `app.setPath('userData', ...)` in `electron/main.ts`. Copy the executable and the data folder together to preserve settings across machines.
+
+> **macOS note:** Unsigned `.dmg` builds require users to right-click → Open on first launch to bypass Gatekeeper. For production distribution, notarization via an Apple Developer account is recommended.
 
 ### Environment Variables
 | Variable | Required | Description |
@@ -291,9 +327,12 @@ astra-dup/
 ### Troubleshooting (Top 3 + Expanded)
 | Issue | Likely Cause | Resolution |
 |---|---|---|
-| AI calls fail | Missing/invalid `API_KEY` or model access restriction | Set `.env.local` key, restart app, validate account/model access |
-| Source connection appears stuck | Simulated delay/state desync in mock flow | Wait briefly, refresh page, re-run source selection |
-| Scan output seems repetitive | Deterministic mock datasets by scan type | Replace `services/api.ts` with dynamic backend endpoints |
+| AI calls fail (web mode) | Missing/invalid `GEMINI_API_KEY` or model access restriction | Copy `.env.example` to `.env`, set key, restart dev server. |
+| AI calls fail (Electron) | API key not yet entered or cleared | Open Settings page, paste key, click Save Key. |
+| Electron window doesn't open in dev | `electron:dev` launched before Vite server is ready | `wait-on` handles the timing — ensure `concurrently` and `wait-on` are installed (`npm install`). |
+| Source connection appears stuck | Simulated delay/state desync in mock flow | Wait briefly, refresh page, re-run source selection. |
+| Scan output seems repetitive | Deterministic mock datasets by scan type | Replace `services/api.ts` with dynamic backend endpoints. |
+| `electron-builder` packaging fails | Missing `assets/icon.png` | Ensure a 512×512 PNG exists at `assets/icon.png`. |
 
 #### Additional Troubleshooting Notes
 - If route loading behaves unexpectedly on static hosting, ensure URLs include `/#/` path segments.
@@ -491,6 +530,8 @@ flowchart LR
 
 ## 9) 📎 Evidence Index
 
+- [Electron main process](./electron/main.ts)
+- [Electron preload / context bridge](./electron/preload.ts)
 - [Route composition and app shell](./App.tsx)
 - [Application bootstrap](./index.tsx)
 - [Scan workflow page](./pages/ScanPage.tsx)
@@ -514,6 +555,7 @@ flowchart LR
 - [Environment variable template](./.env.example)
 - [TypeScript config](./tsconfig.json)
 - [Project metadata](./metadata.json)
+- [API key template](./env.example)
 
 ### Evidence Usage Guidance
 - Use page files for UX flow verification.
