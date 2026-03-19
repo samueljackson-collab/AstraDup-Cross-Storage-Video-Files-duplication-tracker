@@ -45,7 +45,7 @@ export const analyzeImage = async (prompt: string, imageFile: File): Promise<Gen
     const textPart = { text: prompt };
 
     const response = await ai.models.generateContent({
-        model: 'gemini-3-pro-preview',
+        model: 'gemini-1.5-pro',
         contents: { parts: [textPart, imagePart] },
     });
 
@@ -69,7 +69,7 @@ export const analyzeVideoFrames = async (prompt: string, videoFrames: { data: st
     const parts = [textPart, ...imageParts];
 
     const response = await ai.models.generateContent({
-        model: 'gemini-3-pro-preview',
+        model: 'gemini-1.5-pro',
         contents: { parts },
     });
 
@@ -82,7 +82,7 @@ export const analyzeVideoFrames = async (prompt: string, videoFrames: { data: st
 export const groundedQuery = async (prompt: string): Promise<GenerateContentResponse> => {
     const ai = getClient();
     const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-1.5-flash',
         contents: prompt,
         config: {
             tools: [{ googleSearch: {} }],
@@ -99,7 +99,7 @@ export const summarizeText = async (text: string): Promise<GenerateContentRespon
     const ai = getClient();
     const prompt = `Summarize the following text into a concise paragraph:\n\n---\n${text}\n---`;
     const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-1.5-flash',
         contents: prompt,
     });
     return response;
