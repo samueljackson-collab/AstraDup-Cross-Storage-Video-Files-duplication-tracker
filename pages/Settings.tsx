@@ -29,16 +29,22 @@ const DEFAULT_DATABASES: Database[] = [
 
 const SETTINGS_STORAGE_KEY = 'astradup_settings';
 
+const GEMINI_KEY_STORAGE = 'GEMINI_API_KEY';
+
 const Settings: React.FC = () => {
   const [databases, setDatabases] = useState<Database[]>(DEFAULT_DATABASES);
   const [customDbName, setCustomDbName] = useState('');
   const [customDbUrl, setCustomDbUrl] = useState('');
-  
+
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<string[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState('');
   const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
+
+  const [geminiKey, setGeminiKey] = useState('');
+  const [savedGeminiKey, setSavedGeminiKey] = useState('');
+  const [showApiKeySaved, setShowApiKeySaved] = useState(false);
 
   useEffect(() => {
     const savedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
@@ -51,7 +57,26 @@ const Settings: React.FC = () => {
             setDatabases(DEFAULT_DATABASES);
         }
     }
+    const existingKey = localStorage.getItem(GEMINI_KEY_STORAGE) || '';
+    setSavedGeminiKey(existingKey);
   }, []);
+
+  const handleSaveApiKey = () => {
+    const trimmed = geminiKey.trim();
+    if (trimmed) {
+      localStorage.setItem(GEMINI_KEY_STORAGE, trimmed);
+      setSavedGeminiKey(trimmed);
+      setGeminiKey('');
+      setShowApiKeySaved(true);
+      setTimeout(() => setShowApiKeySaved(false), 2000);
+    }
+  };
+
+  const handleClearApiKey = () => {
+    localStorage.removeItem(GEMINI_KEY_STORAGE);
+    setSavedGeminiKey('');
+    setGeminiKey('');
+  };
 
   const handleSaveChanges = () => {
     const settingsToSave = { databases };
@@ -126,6 +151,56 @@ const Settings: React.FC = () => {
       <h1 className="text-4xl font-extrabold tracking-tight text-green-400 mb-2">Settings</h1>
       <p className="text-green-600 mb-8 text-lg">Configure AstraDup to fit your workflow.</p>
       
+      {/* Gemini API Key Section */}
+      <div className="bg-black border border-green-800 rounded-lg mt-8">
+        <div className="p-6">
+          <h2 className="text-2xl font-bold text-green-400">Gemini AI API Key</h2>
+          <p className="text-base text-green-600 mt-1">
+            Required for AI analysis features.{' '}
+            <a
+              href="https://aistudio.google.com/app/apikey"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-green-400 underline hover:text-green-300"
+            >
+              Get a free key at Google AI Studio ↗
+            </a>
+          </p>
+        </div>
+        <div className="px-6 pb-6">
+          {savedGeminiKey ? (
+            <div className="flex items-center justify-between p-3 bg-green-950 border border-green-700 rounded-md mb-3">
+              <span className="text-green-400 text-sm font-mono">
+                Key saved: •••••••••••••••{savedGeminiKey.slice(-4)}
+              </span>
+              <button
+                onClick={handleClearApiKey}
+                className="text-xs text-red-500 hover:text-red-400 ml-4"
+              >
+                Remove
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center p-3 bg-black border border-yellow-700 rounded-md mb-3">
+              <span className="text-yellow-500 text-sm">No API key configured — AI features are disabled.</span>
+            </div>
+          )}
+          <div className="flex gap-2">
+            <input
+              type="password"
+              value={geminiKey}
+              onChange={(e) => setGeminiKey(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSaveApiKey()}
+              placeholder={savedGeminiKey ? 'Enter new key to replace...' : 'Paste your Gemini API key...'}
+              className="flex-grow bg-black border border-green-700 rounded-md py-2 px-3 text-green-300 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none text-base font-mono"
+            />
+            <Button onClick={handleSaveApiKey} disabled={!geminiKey.trim()}>
+              {showApiKeySaved ? 'Saved!' : 'Save Key'}
+            </Button>
+          </div>
+        </div>
+      </div>
+
       <div className="bg-black border border-green-800 rounded-lg mt-8">
         <div className="p-6">
           <h2 className="text-2xl font-bold text-green-400">Reference Databases</h2>
