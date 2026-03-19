@@ -1,6 +1,8 @@
 {
   "name": "astradup",
   "productName": "AstraDup",
+  "description": "AI-powered cross-storage video file deduplication tracker",
+  "author": "AstraDup",
   "private": true,
   "version": "1.0.0",
   "type": "module",
@@ -29,10 +31,20 @@
     ],
     "win": {
       "target": [
+        { "target": "nsis", "arch": ["x64"] },
         { "target": "portable", "arch": ["x64"] }
       ],
       "icon": "assets/icon.png",
-      "artifactName": "${productName}-${version}-portable.${ext}"
+      "artifactName": "${productName}-${version}-win-x64.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "portable": {
+      "requestExecutionLevel": "user"
     },
     "linux": {
       "target": [
@@ -47,9 +59,6 @@
       ],
       "icon": "assets/icon.png",
       "artifactName": "${productName}-${version}.${ext}"
-    },
-    "portable": {
-      "requestExecutionLevel": "user"
     }
   },
   "dependencies": {
