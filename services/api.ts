@@ -1,7 +1,7 @@
 
 import type { DashboardStats, ScanResult, AnyFile, DuplicatePair, VideoFile, ImageFile, DocumentFile, FileType, EnrichedVideoMetadata } from '../types';
 
-const BUNNY_VIDEO_URL = "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
+const BUNNY_VIDEO_URL = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
 
 // --- Mock Data Store ---
 const MOCK_FILES: { [key: string]: AnyFile } = {

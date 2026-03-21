@@ -221,7 +221,7 @@ const ScanPage: React.FC = () => {
                   />
                   <div className="mt-8 flex space-x-4">
                     <Button onClick={() => setIsModalOpen(true)} disabled={selectedSources.size === 0 || !!connectingSource}>
-                      Start {scanType} Scan
+                      Start {scanType ? scanType.charAt(0).toUpperCase() + scanType.slice(1) : ''} Scan
                     </Button>
                     <Button onClick={() => setScanPhase('type_selection')} variant="secondary">
                         Back

@@ -44,7 +44,7 @@ const Dashboard: React.FC = () => {
         setStats(data);
         setLoading(false);
       })
-      .catch(console.error);
+      .catch(err => { console.error(err); setLoading(false); });
   }, []);
   
   const filteredStats = () => {
