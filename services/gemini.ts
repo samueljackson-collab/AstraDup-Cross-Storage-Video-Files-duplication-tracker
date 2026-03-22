@@ -2,7 +2,7 @@
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 
 function getApiKey(): string {
-  return localStorage.getItem('GEMINI_API_KEY') || process.env.API_KEY || '';
+  return localStorage.getItem('GEMINI_API_KEY') || '';
 }
 
 function getClient(): GoogleGenAI {
