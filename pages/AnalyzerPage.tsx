@@ -4,11 +4,11 @@ import Button from '../components/Button';
 import Spinner from '../components/Spinner';
 import { FilmIcon, PhotoIcon } from '../components/FileTypeIcons';
 import { GlobeIcon, UploadCloudIcon, SparklesIcon } from '../components/Icons';
-import { analyzeImage, analyzeVideoFrames, groundedQuery } from '../services/gemini';
+import { analyzeImage, analyzeVideoFrames, groundedQuery, mediaExpertQuery } from '../services/gemini';
 import { extractFrames } from '../utils/video';
 import type { GroundingChunk } from '../types';
 
-type AnalyzerTool = 'image' | 'video' | 'web';
+type AnalyzerTool = 'image' | 'video' | 'web' | 'media';
 
 // --- Shared Components ---
 
@@ -267,16 +267,184 @@ const WebAnalyzer = () => {
 };
 
 
+// --- Media Expert Component ---
+
+interface MediaMessage {
+    query: string;
+    response: GenerateContentResponse;
+}
+
+const EXAMPLE_QUERIES = [
+    "Everything about Inception (2010)",
+    "Complete discography of Daft Punk",
+    "Best films of Stanley Kubrick ranked",
+    "Who scored the Interstellar soundtrack?",
+    "Oscars Best Picture winners since 2010",
+    "Explain the MCU timeline in order",
+    "Most critically acclaimed albums of all time",
+    "Behind the scenes of The Dark Knight",
+];
+
+const MediaExpert = () => {
+    const [query, setQuery] = useState('');
+    const [history, setHistory] = useState<MediaMessage[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+    const inputRef = useRef<HTMLInputElement>(null);
+    const historyEndRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (historyEndRef.current) {
+            historyEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [history]);
+
+    const handleSubmit = async (q?: string) => {
+        const activeQuery = (q ?? query).trim();
+        if (!activeQuery) return;
+        setLoading(true);
+        setError('');
+        setQuery('');
+        try {
+            const response = await mediaExpertQuery(activeQuery);
+            setHistory(prev => [...prev, { query: activeQuery, response }]);
+        } catch (e) {
+            console.error(e);
+            setError('Failed to query MediaMind. Please check your API key and try again.');
+        } finally {
+            setLoading(false);
+            inputRef.current?.focus();
+        }
+    };
+
+    const handleExampleClick = (example: string) => {
+        handleSubmit(example);
+    };
+
+    return (
+        <div className="flex flex-col h-full">
+            {/* Header badge */}
+            <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-2">
+                    <SparklesIcon className="h-5 w-5 text-green-400" />
+                    <span className="text-base font-bold text-green-400">MediaMind</span>
+                    <span className="text-xs text-green-700 border border-green-800 rounded-full px-2 py-0.5">Gemini 2.0 Flash + Google Search</span>
+                </div>
+                {history.length > 0 && (
+                    <button onClick={() => setHistory([])} className="text-xs text-green-700 hover:text-red-400 transition-colors">
+                        Clear history
+                    </button>
+                )}
+            </div>
+
+            {/* Conversation history */}
+            {history.length > 0 ? (
+                <div className="flex flex-col space-y-6 mb-6 overflow-y-auto max-h-[60vh] pr-1">
+                    {history.map((msg, idx) => {
+                        const sources: GroundingChunk[] | undefined = msg.response.candidates?.[0]?.groundingMetadata?.groundingChunks;
+                        return (
+                            <div key={idx} className="space-y-3">
+                                {/* User query bubble */}
+                                <div className="flex justify-end">
+                                    <div className="bg-green-900/40 border border-green-700 rounded-lg px-4 py-2 max-w-xl">
+                                        <p className="text-base text-green-300">{msg.query}</p>
+                                    </div>
+                                </div>
+                                {/* AI response */}
+                                <div className="bg-black border border-green-800 rounded-lg p-5">
+                                    <p className="text-green-400 whitespace-pre-wrap font-mono text-sm leading-relaxed">{msg.response.text}</p>
+                                    {sources && sources.length > 0 && (
+                                        <div className="mt-4 pt-4 border-t border-green-900">
+                                            <p className="text-xs font-bold text-green-600 mb-2 uppercase tracking-wider">Sources</p>
+                                            <ul className="space-y-1">
+                                                {sources.map((s, i) => s.web?.uri && (
+                                                    <li key={i}>
+                                                        <a href={s.web.uri} target="_blank" rel="noopener noreferrer" className="text-xs text-green-500 hover:text-green-300 hover:underline truncate block">
+                                                            {s.web.title || s.web.uri}
+                                                        </a>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })}
+                    {loading && (
+                        <div className="bg-black border border-green-800 rounded-lg p-5 flex items-center space-x-3">
+                            <Spinner />
+                            <span className="text-green-600 text-sm">MediaMind is researching...</span>
+                        </div>
+                    )}
+                    <div ref={historyEndRef} />
+                </div>
+            ) : (
+                /* Empty state with example chips */
+                <div className="flex-1 flex flex-col items-center justify-center py-10">
+                    {!loading ? (
+                        <>
+                            <SparklesIcon className="h-12 w-12 text-green-800 mb-4" />
+                            <p className="text-lg font-bold text-green-600 mb-1">Ask MediaMind anything</p>
+                            <p className="text-sm text-green-800 mb-8 text-center max-w-md">
+                                Encyclopedic knowledge of films, TV, music, and all media — live web research included.
+                            </p>
+                            <div className="flex flex-wrap gap-2 justify-center max-w-2xl">
+                                {EXAMPLE_QUERIES.map(ex => (
+                                    <button
+                                        key={ex}
+                                        onClick={() => handleExampleClick(ex)}
+                                        className="text-sm px-3 py-1.5 bg-black border border-green-800 rounded-full text-green-500 hover:border-green-500 hover:text-green-300 transition-colors"
+                                    >
+                                        {ex}
+                                    </button>
+                                ))}
+                            </div>
+                        </>
+                    ) : (
+                        <div className="flex items-center space-x-3">
+                            <Spinner />
+                            <span className="text-green-600 text-sm">MediaMind is researching...</span>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Error */}
+            {error && <p className="text-red-400 text-sm mb-3">{error}</p>}
+
+            {/* Input bar */}
+            <div className="flex gap-2 mt-auto">
+                <input
+                    ref={inputRef}
+                    type="text"
+                    value={query}
+                    onChange={e => setQuery(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && !loading && handleSubmit()}
+                    disabled={loading}
+                    className="flex-grow bg-black border border-green-700 rounded-md py-2.5 px-4 text-green-300 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none text-base placeholder-green-800 disabled:opacity-50"
+                    placeholder="Ask about any movie, show, artist, album..."
+                />
+                <Button onClick={() => handleSubmit()} disabled={!query.trim() || loading} className="px-6">
+                    {loading ? <Spinner /> : 'Ask'}
+                </Button>
+            </div>
+        </div>
+    );
+};
+
+
 // --- Main Component ---
 
 const AnalyzerPage: React.FC = () => {
-    const [activeTool, setActiveTool] = useState<AnalyzerTool>('image');
+    const [activeTool, setActiveTool] = useState<AnalyzerTool>('media');
 
     const renderTool = () => {
         switch (activeTool) {
             case 'image': return <ImageAnalyzer />;
             case 'video': return <VideoAnalyzer />;
             case 'web': return <WebAnalyzer />;
+            case 'media': return <MediaExpert />;
             default: return null;
         }
     };
@@ -298,10 +466,11 @@ const AnalyzerPage: React.FC = () => {
             <h1 className="text-4xl font-extrabold tracking-tight text-green-400 mb-2">AI Analyzer</h1>
             <p className="text-green-600 mb-8 text-lg">Use generative AI to understand your media and get up-to-date information from the web.</p>
             
-            <div className="flex space-x-2 border-b border-green-800 mb-8 pb-4">
+            <div className="flex flex-wrap gap-2 border-b border-green-800 mb-8 pb-4">
+                <TabButton tool="media" label="Media Expert" icon={SparklesIcon} />
                 <TabButton tool="image" label="Image Analysis" icon={PhotoIcon} />
                 <TabButton tool="video" label="Video Analysis" icon={FilmIcon} />
-                <TabButton tool="web" label="Web Analysis" icon={GlobeIcon} />
+                <TabButton tool="web" label="Web Search" icon={GlobeIcon} />
             </div>
 
             {renderTool()}
