@@ -95,8 +95,12 @@ const Settings: React.FC = () => {
   };
 
   const handleAddCustomDb = () => {
-    if (customDbName.trim() && customDbUrl.trim() && !databases.some(db => db.name.toLowerCase() === customDbName.trim().toLowerCase())) {
-      const newDb: Database = { id: `custom_${Date.now()}`, name: customDbName.trim(), url: customDbUrl.trim(), enabled: true, type: 'custom', verified: false };
+    const trimmedUrl = customDbUrl.trim();
+    let parsedUrl: URL;
+    try { parsedUrl = new URL(trimmedUrl); } catch { return; }
+    if (!['https:', 'http:'].includes(parsedUrl.protocol)) return;
+    if (customDbName.trim() && trimmedUrl && !databases.some(db => db.name.toLowerCase() === customDbName.trim().toLowerCase())) {
+      const newDb: Database = { id: `custom_${Date.now()}`, name: customDbName.trim(), url: trimmedUrl, enabled: true, type: 'custom', verified: false };
       setDatabases(dbs => [...dbs, newDb]);
       setCustomDbName('');
       setCustomDbUrl('');
@@ -122,7 +126,8 @@ const Settings: React.FC = () => {
     setSearchResults([]);
 
     try {
-        const prompt = `Based on the query "${searchQuery}", find names of relevant movie, TV show, or general entertainment databases. Respond ONLY with a valid JSON array of strings. Example: ["Rotten Tomatoes", "Metacritic"]`;
+        const sanitized = searchQuery.replace(/"/g, '').trim();
+        const prompt = `Based on the query "${sanitized}", find names of relevant movie, TV show, or general entertainment databases. Respond ONLY with a valid JSON array of strings. Example: ["Rotten Tomatoes", "Metacritic"]`;
         const response = await groundedQuery(prompt);
         let jsonString = response.text.trim();
         if (jsonString.startsWith('```json')) jsonString = jsonString.substring(7, jsonString.length - 3).trim();
