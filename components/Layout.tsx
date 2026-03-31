@@ -25,7 +25,8 @@ const Header: React.FC<{ onToggle: () => void; }> = ({ onToggle }) => {
     const location = useLocation();
     const getTitle = () => {
         const path = location.pathname.split('/')[1] || 'dashboard';
-        if (path.startsWith('file') || path.startsWith('compare')) return "File Details";
+        if (path.startsWith('compare')) return "File Comparison";
+        if (path.startsWith('file')) return "File Details";
         if (path === 'analyzer') return "AI Analyzer";
         return path.charAt(0).toUpperCase() + path.slice(1);
     }
