@@ -114,7 +114,7 @@ const Settings: React.FC = () => {
     setCustomDbName(value);
     setActiveSuggestionIndex(-1);
     if (value.trim().length >= 2) {
-      const lower = value.toLowerCase();
+      const lower = value.trim().toLowerCase();
       const filtered = KNOWN_DATABASES.filter(
         db =>
           db.name.toLowerCase().includes(lower) &&
