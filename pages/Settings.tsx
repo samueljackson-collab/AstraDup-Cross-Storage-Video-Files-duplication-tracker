@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Button from '../components/Button';
 import { PlusIcon, TrashIcon, CheckCircleIcon } from '../components/Icons';
 import { groundedQuery } from '../services/gemini';
@@ -21,6 +21,40 @@ interface Database {
     verifying?: boolean;
 }
 
+interface KnownDatabase {
+    name: string;
+    url: string;
+}
+
+const KNOWN_DATABASES: KnownDatabase[] = [
+    { name: 'IMDb', url: 'https://www.imdb.com' },
+    { name: 'The Movie Database (TMDb)', url: 'https://www.themoviedb.org' },
+    { name: 'The TVDB', url: 'https://www.thetvdb.com' },
+    { name: 'Rotten Tomatoes', url: 'https://www.rottentomatoes.com' },
+    { name: 'Metacritic', url: 'https://www.metacritic.com' },
+    { name: 'Letterboxd', url: 'https://letterboxd.com' },
+    { name: 'Trakt', url: 'https://trakt.tv' },
+    { name: 'AniDB', url: 'https://anidb.net' },
+    { name: 'MyAnimeList', url: 'https://myanimelist.net' },
+    { name: 'Kitsu', url: 'https://kitsu.io' },
+    { name: 'AniList', url: 'https://anilist.co' },
+    { name: 'Filmweb', url: 'https://www.filmweb.pl' },
+    { name: 'AllMovie', url: 'https://www.allmovie.com' },
+    { name: 'TV Maze', url: 'https://www.tvmaze.com' },
+    { name: 'Simkl', url: 'https://simkl.com' },
+    { name: 'Plex', url: 'https://www.plex.tv' },
+    { name: 'JustWatch', url: 'https://www.justwatch.com' },
+    { name: 'FilmAffinity', url: 'https://www.filmaffinity.com' },
+    { name: 'Douban', url: 'https://www.douban.com' },
+    { name: 'Fandango', url: 'https://www.fandango.com' },
+    { name: 'Open Movie Database (OMDb)', url: 'https://www.omdbapi.com' },
+    { name: 'Wikidata', url: 'https://www.wikidata.org' },
+    { name: 'MusicBrainz', url: 'https://musicbrainz.org' },
+    { name: 'TheTVDB Legacy', url: 'https://legacy.thetvdb.com' },
+    { name: 'Netflix', url: 'https://www.netflix.com' },
+    { name: 'Amazon Prime Video', url: 'https://www.primevideo.com' },
+];
+
 const DEFAULT_DATABASES: Database[] = [
   { id: 'imdb', name: 'IMDb', enabled: true, type: 'default', url: 'https://www.imdb.com', verified: true },
   { id: 'tmdb', name: 'The Movie Database (TMDb)', enabled: true, type: 'default', url: 'https://www.themoviedb.org', verified: true },
@@ -35,6 +69,10 @@ const Settings: React.FC = () => {
   const [databases, setDatabases] = useState<Database[]>(DEFAULT_DATABASES);
   const [customDbName, setCustomDbName] = useState('');
   const [customDbUrl, setCustomDbUrl] = useState('');
+  const [nameSuggestions, setNameSuggestions] = useState<KnownDatabase[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
+  const autocompleteRef = useRef<HTMLDivElement>(null);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<string[]>([]);
@@ -60,6 +98,59 @@ const Settings: React.FC = () => {
     const existingKey = localStorage.getItem(GEMINI_KEY_STORAGE) || '';
     setSavedGeminiKey(existingKey);
   }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (autocompleteRef.current && !autocompleteRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+        setActiveSuggestionIndex(-1);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleCustomDbNameChange = (value: string) => {
+    setCustomDbName(value);
+    setActiveSuggestionIndex(-1);
+    if (value.trim().length >= 2) {
+      const lower = value.trim().toLowerCase();
+      const filtered = KNOWN_DATABASES.filter(
+        db =>
+          db.name.toLowerCase().includes(lower) &&
+          !databases.some(existing => existing.name.toLowerCase() === db.name.toLowerCase())
+      );
+      setNameSuggestions(filtered);
+      setShowSuggestions(filtered.length > 0);
+    } else {
+      setNameSuggestions([]);
+      setShowSuggestions(false);
+    }
+  };
+
+  const handleSelectSuggestion = (suggestion: KnownDatabase) => {
+    setCustomDbName(suggestion.name);
+    if (!customDbUrl.trim()) setCustomDbUrl(suggestion.url);
+    setShowSuggestions(false);
+    setActiveSuggestionIndex(-1);
+  };
+
+  const handleNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showSuggestions) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActiveSuggestionIndex(i => Math.min(i + 1, nameSuggestions.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveSuggestionIndex(i => Math.max(i - 1, 0));
+    } else if (e.key === 'Enter' && activeSuggestionIndex >= 0) {
+      e.preventDefault();
+      handleSelectSuggestion(nameSuggestions[activeSuggestionIndex]);
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false);
+      setActiveSuggestionIndex(-1);
+    }
+  };
 
   const handleSaveApiKey = () => {
     const trimmed = geminiKey.trim();
@@ -238,7 +329,44 @@ const Settings: React.FC = () => {
            <div className="py-4">
                  <p className="text-base font-bold text-green-400 mb-2">Add Custom Source Manually</p>
                 <div className="flex flex-col sm:flex-row gap-2">
-                    <input type="text" value={customDbName} onChange={(e) => setCustomDbName(e.target.value)} placeholder="Database Name" className="flex-grow bg-black border border-green-700 rounded-md py-2 px-3 text-green-300 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none text-base" />
+                    <div ref={autocompleteRef} className="relative flex-grow">
+                        <input
+                            type="text"
+                            value={customDbName}
+                            onChange={(e) => handleCustomDbNameChange(e.target.value)}
+                            onKeyDown={handleNameKeyDown}
+                            onFocus={() => customDbName.trim().length >= 2 && nameSuggestions.length > 0 && setShowSuggestions(true)}
+                            placeholder="Database Name"
+                            autoComplete="off"
+                            aria-autocomplete="list"
+                            aria-expanded={showSuggestions}
+                            className="w-full bg-black border border-green-700 rounded-md py-2 px-3 text-green-300 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none text-base"
+                        />
+                        {showSuggestions && (
+                            <ul
+                                role="listbox"
+                                className="absolute z-20 left-0 right-0 mt-1 bg-black border border-green-700 rounded-md shadow-lg max-h-48 overflow-y-auto"
+                            >
+                                {nameSuggestions.map((suggestion, index) => (
+                                    <li
+                                        key={suggestion.name}
+                                        role="option"
+                                        aria-selected={index === activeSuggestionIndex}
+                                        onMouseDown={() => handleSelectSuggestion(suggestion)}
+                                        onMouseEnter={() => setActiveSuggestionIndex(index)}
+                                        className={`px-3 py-2 cursor-pointer text-sm ${
+                                            index === activeSuggestionIndex
+                                                ? 'bg-green-800 text-green-200'
+                                                : 'text-green-400 hover:bg-green-900'
+                                        }`}
+                                    >
+                                        <span className="font-medium">{suggestion.name}</span>
+                                        <span className="ml-2 text-green-700 font-mono text-xs">{suggestion.url}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
                     <input type="url" value={customDbUrl} onChange={(e) => setCustomDbUrl(e.target.value)} placeholder="https://example.com/api" className="flex-grow bg-black border border-green-700 rounded-md py-2 px-3 text-green-300 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none text-base" />
                     <Button onClick={handleAddCustomDb} className="sm:w-auto"><PlusIcon className="w-5 h-5"/></Button>
                 </div>
