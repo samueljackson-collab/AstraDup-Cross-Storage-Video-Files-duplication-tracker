@@ -148,7 +148,7 @@ const ScanPage: React.FC = () => {
   
   const handleConnectSource = (sourceId: string) => {
     setConnectingSource(sourceId);
-    // Simulate SSO login flow
+    // DEMO ONLY: Simulates an SSO/OAuth connection. Replace with a real OAuth redirect in production.
     setTimeout(() => {
         setConnectedSources(prev => new Set(prev).add(sourceId));
         setSelectedSources(prev => new Set(prev).add(sourceId));

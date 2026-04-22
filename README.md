@@ -49,7 +49,7 @@ Traditional dedup fails in common real-world scenarios:
 
 ### 1. Clone the Repository
 ```bash
-git clone <repository-url>
+git clone https://github.com/samueljackson-collab/astradup-cross-storage-video-files-duplication-tracker.git
 cd AstraDup-Cross-Storage-Video-Files-duplication-tracker
 ```
 
@@ -200,8 +200,7 @@ astra-dup/
 │   ├── ComparisonPage.tsx
 │   ├── AnalyzerPage.tsx
 │   ├── Settings.tsx
-│   ├── FileDetail.tsx
-│   └── VideoDetail.tsx
+│   └── FileDetail.tsx
 ├── components/
 │   ├── Button.tsx
 │   ├── Layout.tsx
@@ -291,7 +290,7 @@ astra-dup/
 | Step | Command | Output |
 |---|---|---|
 | Build all platforms (current OS) | `npm run electron:build` | `release/` directory with platform artifacts. |
-| Windows portable `.exe` | `npm run electron:build:win` | `release/AstraDup-1.0.0-portable.exe` |
+| Windows portable `.exe` | `npm run electron:build:win` | `release/AstraDup-1.0.0-win-x64.exe` |
 | Linux AppImage | `npm run electron:build:linux` | `release/AstraDup-1.0.0.AppImage` |
 | macOS `.dmg` | `npm run electron:build:mac` | `release/AstraDup-1.0.0.dmg` (requires macOS host) |
 
@@ -594,7 +593,6 @@ flowchart LR
 - [Scan workflow page](./pages/ScanPage.tsx)
 - [Comparison workflow page](./pages/ComparisonPage.tsx)
 - [File detail workflow page](./pages/FileDetail.tsx)
-- [Video detail page](./pages/VideoDetail.tsx)
 - [Analyzer workflow page](./pages/AnalyzerPage.tsx)
 - [Settings page (persistence/config)](./pages/Settings.tsx)
 - [Dashboard page](./pages/Dashboard.tsx)
@@ -612,7 +610,6 @@ flowchart LR
 - [Environment variable template](./.env.example)
 - [TypeScript config](./tsconfig.json)
 - [Project metadata](./metadata.json)
-- [API key template](./env.example)
 
 ### Evidence Usage Guidance
 - Use page files for UX flow verification.
@@ -860,7 +857,6 @@ This README intentionally prioritizes expansion and historical detail retention.
 ### H.3 Detail and Comparison Workflows
 - `./pages/ComparisonPage.tsx`
 - `./pages/FileDetail.tsx`
-- `./pages/VideoDetail.tsx`
 - `./components/DetailViews.tsx`
 
 ### H.4 AI and Metadata Flows
@@ -926,4 +922,555 @@ This README intentionally prioritizes expansion and historical detail retention.
 - Planned features are explicitly marked to prevent scope confusion.
 - Operational and architecture guidance is included to support smooth transition from prototype to production-ready system.
 - Where implementation does not yet exist, entries are labeled as planned and tied to roadmap milestones.
+
+---
+
+## Appendix L: Platform-Specific Setup Guide
+
+This guide walks you through every step — from a fresh machine to a fully running AstraDup instance — for each major operating system. Each step explains **what** it does and **why**, followed by the exact commands and the expected outcome. A pre-production testing checklist is at the end.
+
+> **Time estimate:** 15–30 minutes on a fresh machine, 5–10 minutes if Node.js is already installed.
+
+---
+
+### L.1 — What You Will Need (All Platforms)
+
+| Requirement | Minimum | Notes |
+|---|---|---|
+| **RAM** | 4 GB | 8 GB recommended for Electron dev builds |
+| **Disk space** | 2 GB free | For Node.js, `node_modules`, Electron binaries, and build output |
+| **Node.js** | 18.x LTS or newer | npm 9+ is bundled with Node 18+ |
+| **Git** | Any recent version | Optional — you can also download a ZIP archive |
+| **Network** | Internet access | Required during `npm install` and for Gemini AI features |
+| **Gemini API key** | Free | Obtain at [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) — needed only for AI analysis tabs |
+
+> **No Gemini key?** The app works fully without one — Dashboard, Scan, Comparison, File Detail, and Settings all function in demo mode. Only the Analyzer page requires a key.
+
+---
+
+### L.2 — Windows 10 / 11 Setup
+
+#### Step 1 — Verify or Install Node.js
+
+**Why:** Node.js provides the JavaScript runtime and the `npm` package manager that installs all dependencies and runs the build tools.
+
+1. Open **PowerShell** or **Command Prompt** and run:
+   ```powershell
+   node --version
+   npm --version
+   ```
+2. If both commands return version numbers (e.g. `v20.11.0` and `10.x.x`), skip to Step 2.
+3. If not installed, go to [nodejs.org](https://nodejs.org/), download the **LTS** installer (`.msi`), and run it. Accept all defaults — it installs both `node` and `npm` and adds them to your PATH automatically.
+4. Re-open PowerShell and re-run the version commands to confirm.
+
+**Expected outcome:** Both `node --version` and `npm --version` print a version number without errors.
+
+> **If it fails:** Close and re-open PowerShell after installation so the updated PATH takes effect.
+
+---
+
+#### Step 2 — Get the Repository
+
+**Why:** You need the project source code on your local machine.
+
+**Option A — Clone with Git (recommended if Git is installed):**
+```powershell
+git clone https://github.com/samueljackson-collab/astradup-cross-storage-video-files-duplication-tracker.git
+cd AstraDup-Cross-Storage-Video-Files-duplication-tracker
+```
+
+**Option B — Download ZIP (no Git required):**
+1. Go to the repository page on GitHub.
+2. Click the green **Code** button → **Download ZIP**.
+3. Extract the ZIP to a folder of your choice (e.g. `C:\Projects\AstraDup`).
+4. Open PowerShell and `cd` into that folder:
+   ```powershell
+   cd "C:\Projects\AstraDup-Cross-Storage-Video-Files-duplication-tracker"
+   ```
+
+**Expected outcome:** Your terminal is inside the project folder. Running `dir` shows files like `package.json`, `App.tsx`, and `README.md`.
+
+---
+
+#### Step 3 — Install Project Dependencies
+
+**Why:** `npm install` reads `package.json` and downloads all required libraries (React, Electron, Vite, Tailwind, etc.) into a local `node_modules/` folder. Nothing is installed globally.
+
+```powershell
+npm install
+```
+
+**Expected outcome:** After 1–3 minutes, the terminal prints something like `added 512 packages` with no `ERR!` lines. A `node_modules/` folder now exists in the project directory.
+
+> **If it fails with EACCES or permission errors:** Run PowerShell as Administrator. If behind a corporate proxy, set `npm config set proxy http://your-proxy:port`.
+
+---
+
+#### Step 4 — Configure Your Gemini API Key (optional)
+
+**Why:** The AI analysis features (Analyzer page) call Google's Gemini API. The key is stored locally — it never leaves your machine except in direct calls to Google's servers.
+
+**Two ways to configure:**
+
+**Method A — Environment file (for `npm run dev` web mode):**
+```powershell
+copy .env.example .env.local
+notepad .env.local
+```
+In Notepad, replace `your_gemini_api_key_here` with your actual key, then save.
+
+**Method B — In-app Settings (for Electron or if you prefer not to edit files):**
+Skip this step now. Once the app is running, go to **Settings → Gemini AI API Key**, paste your key, and click **Save Key**. The key is stored in browser localStorage.
+
+**Expected outcome:** Either `.env.local` contains your key, or you plan to enter it in the UI after launch.
+
+---
+
+#### Step 5 — Run in Development Mode (Web Browser)
+
+**Why:** This starts a fast local development server with live reload. It is the quickest way to verify the app works before doing a production build.
+
+```powershell
+npm run dev
+```
+
+**Expected outcome:** The terminal prints a URL like:
+```
+  VITE v6.x.x  ready in 500ms
+  ➜  Local:   http://localhost:3000/
+```
+Open `http://localhost:3000` in Chrome, Edge, or Firefox. The AstraDup dashboard should load with a green-on-black theme showing file statistics.
+
+> **If the port is in use:** Vite will automatically try the next available port (3001, 3002, etc.) — check the terminal output for the actual URL.
+
+---
+
+#### Step 6 — Run as Electron Desktop App (optional)
+
+**Why:** This launches the app as a native Windows window instead of a browser tab, using the same code.
+
+Open a **new** PowerShell window (keep the dev server running in the first one) and run:
+```powershell
+npm run electron:dev
+```
+
+**Expected outcome:** A desktop window opens titled "AstraDup" showing the same interface. Closing the window exits the Electron process.
+
+> **If the window shows a blank screen:** Wait 5–10 seconds for Vite to finish compiling, then press `Ctrl+R` inside the Electron window to reload.
+
+---
+
+#### Step 7 — Run the Test Suite
+
+**Why:** Verifies that the service layer works correctly and no regressions were introduced.
+
+```powershell
+npm run type-check
+npm run test
+```
+
+**Expected outcome:**
+- `type-check` prints `0 errors` (TypeScript validation passed).
+- `test` prints something like `✓ 10 tests passed` with no failures.
+
+---
+
+#### Step 8 — Build a Windows Installer for Production
+
+**Why:** Creates a self-contained portable `.exe` you can distribute. No installation wizard is required — users just double-click to run.
+
+```powershell
+npm run electron:build:win
+```
+
+**Expected outcome:** After 2–5 minutes, a file appears at:
+```
+release/AstraDup-1.0.0-win-x64.exe
+```
+Double-click it to launch the production build. Settings are saved to an `AstraDup-Data/` folder next to the `.exe` — copy both together to move the app to another machine.
+
+> **If the build fails with icon errors:** Ensure `assets/icon.png` exists and is a 512×512 PNG.
+
+---
+
+### L.3 — macOS Setup (Intel + Apple Silicon)
+
+#### Step 1 — Install Homebrew (recommended package manager)
+
+**Why:** Homebrew is the standard way to install developer tools on macOS without needing to manually manage paths or compiler flags.
+
+Open **Terminal** (`Cmd+Space` → type "Terminal") and run:
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
+Follow the on-screen prompts. On Apple Silicon (M1/M2/M3) Macs, Homebrew installs to `/opt/homebrew/` — the installer will tell you to add it to your PATH. Run the two `echo` and `eval` commands it shows before continuing.
+
+**Expected outcome:** `brew --version` prints a version number.
+
+> **Skip this step** if Homebrew is already installed. Verify with `brew --version`.
+
+---
+
+#### Step 2 — Install Node.js
+
+**Why:** Node.js provides the runtime and package manager.
+
+**With Homebrew (recommended):**
+```bash
+brew install node
+```
+
+**Or with the official installer:**
+Download the macOS `.pkg` from [nodejs.org](https://nodejs.org/) (LTS version) and run it.
+
+Verify:
+```bash
+node --version   # should print v18 or higher
+npm --version    # should print 9 or higher
+```
+
+**Expected outcome:** Both commands print version numbers.
+
+---
+
+#### Step 3 — Install Xcode Command Line Tools (provides Git)
+
+**Why:** Git is needed to clone the repository. The Xcode CLI tools also include compilers that some native Node modules need.
+
+```bash
+xcode-select --install
+```
+A dialog will appear — click **Install**. This takes 2–5 minutes.
+
+Verify:
+```bash
+git --version   # e.g. git version 2.39.3
+```
+
+**Expected outcome:** Git version prints without error.
+
+---
+
+#### Step 4 — Get the Repository
+
+```bash
+git clone https://github.com/samueljackson-collab/astradup-cross-storage-video-files-duplication-tracker.git
+cd AstraDup-Cross-Storage-Video-Files-duplication-tracker
+```
+
+Or download the ZIP from GitHub and extract it, then `cd` into the folder in Terminal.
+
+**Expected outcome:** `ls` shows `package.json`, `App.tsx`, `README.md`, etc.
+
+---
+
+#### Step 5 — Install Project Dependencies
+
+```bash
+npm install
+```
+
+**Expected outcome:** Completes in 1–3 minutes with `added N packages` and no `ERR!` lines.
+
+> **On Apple Silicon:** If you see errors about native modules, run `arch -x86_64 npm install` as a fallback. Most packages have arm64 builds and this should not be needed.
+
+---
+
+#### Step 6 — Configure Your Gemini API Key (optional)
+
+**Method A — Environment file:**
+```bash
+cp .env.example .env.local
+open -e .env.local   # opens in TextEdit
+```
+Replace `your_gemini_api_key_here` with your key and save.
+
+**Method B — In-app Settings:**
+Skip this step and enter the key in **Settings → Gemini AI API Key** once the app is running.
+
+---
+
+#### Step 7 — Run in Development Mode
+
+```bash
+npm run dev
+```
+
+Open `http://localhost:3000` in Safari, Chrome, or Firefox.
+
+**Expected outcome:** AstraDup dashboard loads. Scan, compare, and Settings pages all navigate correctly.
+
+---
+
+#### Step 8 — Run as Electron Desktop App (optional)
+
+```bash
+npm run electron:dev
+```
+
+**Expected outcome:** A native macOS window opens. The traffic-light window controls (close/minimize/maximize) work normally.
+
+---
+
+#### Step 9 — Build a macOS `.dmg` for Production
+
+```bash
+npm run electron:build:mac
+```
+
+**Expected outcome:** After 3–6 minutes:
+```
+release/AstraDup-1.0.0.dmg
+```
+
+Double-click the `.dmg`, drag AstraDup to your Applications folder, and launch it.
+
+---
+
+#### Step 10 — First-Launch Gatekeeper Bypass (unsigned builds)
+
+**Why:** macOS Gatekeeper blocks apps that are not signed with an Apple Developer certificate. The release build is unsigned for development use.
+
+1. In Finder, navigate to the `.dmg` or the installed app in `/Applications`.
+2. **Right-click** (or Ctrl+click) the app icon → **Open**.
+3. A dialog appears warning about an unidentified developer — click **Open** again.
+4. From this point on, the app opens normally with a double-click.
+
+> **For production distribution:** Obtain an Apple Developer account, sign and notarize the build using `CSC_LINK` and `APPLE_ID` environment variables with `electron-builder`. Notarized builds open without the Gatekeeper warning on any Mac.
+
+---
+
+### L.4 — Linux Setup (Debian/Ubuntu and Fedora/RHEL)
+
+#### Step 1 — Install Node.js
+
+**Why:** The system package managers often ship outdated Node versions. Use NodeSource or `nvm` for a current LTS release.
+
+**Option A — NodeSource (system-wide, recommended for servers):**
+
+*Debian/Ubuntu:*
+```bash
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt-get install -y nodejs
+```
+
+*Fedora/RHEL/Rocky:*
+```bash
+curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo bash -
+sudo dnf install -y nodejs
+```
+
+**Option B — nvm (per-user, recommended for developer machines):**
+```bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+source ~/.bashrc   # or ~/.zshrc if using zsh
+nvm install 20
+nvm use 20
+```
+
+Verify:
+```bash
+node --version   # v20.x.x
+npm --version    # 10.x.x
+```
+
+---
+
+#### Step 2 — Install Git and Build Tools
+
+**Why:** Git clones the repository. Build tools (gcc, make, python3) are needed by some native Electron dependencies.
+
+*Debian/Ubuntu:*
+```bash
+sudo apt-get update
+sudo apt-get install -y git build-essential python3
+```
+
+*Fedora/RHEL:*
+```bash
+sudo dnf install -y git gcc gcc-c++ make python3
+```
+
+---
+
+#### Step 3 — Install Linux-Specific Electron Native Dependencies
+
+**Why:** Electron on Linux requires GTK3 and WebKit2GTK for its rendering engine, plus libnotify and libnss for system integration. Without these, `npm run electron:dev` will fail with missing shared library errors.
+
+*Debian/Ubuntu:*
+```bash
+sudo apt-get install -y \
+  libgtk-3-dev \
+  libwebkit2gtk-4.0-dev \
+  libnotify-dev \
+  libnss3 \
+  libxss1 \
+  libasound2
+```
+
+*Fedora/RHEL:*
+```bash
+sudo dnf install -y \
+  gtk3-devel \
+  webkit2gtk3-devel \
+  libnotify \
+  nss \
+  libXScrnSaver \
+  alsa-lib
+```
+
+> **Web-only mode:** If you are running the app in a browser only (`npm run dev`) and do not need the Electron desktop window, you can skip this step.
+
+---
+
+#### Step 4 — Get the Repository
+
+```bash
+git clone https://github.com/samueljackson-collab/astradup-cross-storage-video-files-duplication-tracker.git
+cd AstraDup-Cross-Storage-Video-Files-duplication-tracker
+```
+
+**Expected outcome:** `ls` shows `package.json`, `App.tsx`, `README.md`, etc.
+
+---
+
+#### Step 5 — Install Project Dependencies
+
+```bash
+npm install
+```
+
+**Expected outcome:** Completes with `added N packages`. No `ERR!` lines.
+
+> **If you see `EACCES: permission denied` on `node_modules`:** Do NOT use `sudo npm install`. Instead, fix npm's directory ownership: `sudo chown -R $(whoami) ~/.npm` then retry.
+
+---
+
+#### Step 6 — Configure Your Gemini API Key (optional)
+
+```bash
+cp .env.example .env.local
+nano .env.local   # or: vim .env.local, gedit .env.local, code .env.local
+```
+Replace `your_gemini_api_key_here` with your key and save.
+
+Or enter the key in the **Settings → Gemini AI API Key** section after the app starts.
+
+---
+
+#### Step 7 — Run in Development Mode (Web Browser)
+
+```bash
+npm run dev
+```
+
+Open `http://localhost:3000` in your browser.
+
+**Expected outcome:** AstraDup dashboard loads with the green-on-black interface.
+
+---
+
+#### Step 8 — Run as Electron Desktop App (optional)
+
+```bash
+npm run electron:dev
+```
+
+**Expected outcome:** A desktop window opens. If your system uses Wayland, add `--ozone-platform=wayland` if the window appears blank:
+```bash
+ELECTRON_OZONE_PLATFORM_HINT=auto npm run electron:dev
+```
+
+---
+
+#### Step 9 — Build a Linux AppImage
+
+**Why:** An AppImage is a self-contained executable that runs on any Linux distribution without installation.
+
+```bash
+npm run electron:build:linux
+```
+
+**Expected outcome:**
+```
+release/AstraDup-1.0.0.AppImage
+```
+
+Make it executable and run it:
+```bash
+chmod +x release/AstraDup-1.0.0.AppImage
+./release/AstraDup-1.0.0.AppImage
+```
+
+> **AppImage on Wayland:** Prepend `ELECTRON_OZONE_PLATFORM_HINT=auto` to the launch command if the window is blank.
+
+---
+
+### L.5 — Pre-Production Testing Checklist
+
+Run through all items below after setup and before releasing or handing off the app. Mark each item when verified.
+
+#### Phase 1 — Environment Verification
+
+- [ ] **1.1** `npm run type-check` exits with zero TypeScript errors.
+- [ ] **1.2** `npm run test` passes all test cases with no failures.
+- [ ] **1.3** `npm run build` completes and produces a `dist/` folder.
+- [ ] **1.4** `npm run preview` serves the production build at `http://localhost:4173` (or next available port).
+
+#### Phase 2 — Route Smoke Test (browser or Electron)
+
+Start the dev server (`npm run dev`) or preview server (`npm run preview`) and navigate to each route:
+
+- [ ] **2.1** `/#/` — Dashboard loads. Stats cards show numbers. Activity feed renders. No console errors.
+- [ ] **2.2** `/#/scan` — Scan type cards render (Videos, Images, Documents). Clicking one advances to source selection.
+- [ ] **2.3** `/#/scan` → source selection — Local Drive appears selected by default. Cloud sources show a "Connect" button with the "(Demo: simulated connection)" label.
+- [ ] **2.4** `/#/scan` → Start Scan → confirmation modal appears, shows database toggles → Start → progress bar animates → results list appears.
+- [ ] **2.5** `/#/comparison/vid1/vid2` — Side-by-side video comparison renders. "Keep This File" button works. Confirming deletion shows the demo-mode notice banner.
+- [ ] **2.6** `/#/comparison/img1/img2` — Image comparison renders. "Show Pixel Diff" toggle is clickable.
+- [ ] **2.7** `/#/comparison/doc1/doc2` — Document comparison renders. "Show Text Diff" toggle shows the "not available in demo mode" message (not Lorem ipsum).
+- [ ] **2.8** `/#/file/vid1` — File detail page renders with Properties, Enriched, AI Analysis, and Duplicates tabs. Video player loads. Enrichment panel button is visible.
+- [ ] **2.9** `/#/file/img1` — Image detail page renders with EXIF data.
+- [ ] **2.10** `/#/file/doc1` — Document detail page renders with content preview.
+- [ ] **2.11** `/#/analyzer` — All four tabs render: Media Expert, Image Analysis, Video Analysis, Web Search. Example queries are clickable.
+- [ ] **2.12** `/#/settings` — Gemini API key section renders. Reference databases list shows IMDb, TMDb, TVDB. "Find Databases with AI" search section is visible. "Add Custom Source Manually" form works.
+
+#### Phase 3 — Functional Verification
+
+- [ ] **3.1** **Scan completes all three types:** Run a Video scan, an Image scan, and a Document scan in sequence. Each returns a results list with duplicate pairs.
+- [ ] **3.2** **Settings persistence:** In Settings, toggle a database off, click Save Changes, refresh the page — the toggle state is preserved.
+- [ ] **3.3** **API key save/clear:** Enter a test key in Settings, click Save Key — the masked key appears. Click Remove — the "No API key configured" warning returns.
+- [ ] **3.4** **Custom source add:** In Settings, type a new database name and URL, click `+`. The source appears in the list with a Verify button showing "Verify". Clicking it shows "Verified (demo)" after 1.5 seconds.
+- [ ] **3.5** **Error boundary:** No unhandled crashes occur across any route with the mock data set.
+- [ ] **3.6** **External links:** IMDb links in File Detail open in the system browser, not inside the app.
+
+#### Phase 4 — AI Features (requires Gemini API key)
+
+- [ ] **4.1** **Web Search:** In Analyzer → Web Search tab, enter a query and submit. A response appears with source citations.
+- [ ] **4.2** **Media Expert:** In Analyzer → Media Expert tab, click an example query. A response is returned.
+- [ ] **4.3** **AI database search:** In Settings → "Find Databases with AI", enter a topic (e.g. "anime") and click Search. Results list appears with "Use" buttons.
+- [ ] **4.4** **Image Analysis:** In Analyzer → Image Analysis, upload an image and submit a prompt. AI response appears.
+
+#### Phase 5 — Desktop Build (Electron)
+
+- [ ] **5.1** `npm run electron:dev` opens a native desktop window. All routes work inside it.
+- [ ] **5.2** Platform production build command runs without errors and produces an artifact:
+  - Windows: `release/AstraDup-1.0.0-win-x64.exe`
+  - macOS: `release/AstraDup-1.0.0.dmg`
+  - Linux: `release/AstraDup-1.0.0.AppImage`
+- [ ] **5.3** The packaged artifact launches successfully and loads the dashboard.
+- [ ] **5.4** Settings saved in the packaged app persist after closing and relaunching (stored in `AstraDup-Data/` next to the executable).
+
+#### Phase 6 — Known Limitations (accept before release)
+
+These are intentional prototype constraints. Verify they are clearly communicated to users:
+
+- [ ] **6.1** All scan results are from mock data — no real files are scanned.
+- [ ] **6.2** Cloud storage connections (Google Drive, Dropbox, OneDrive) are simulated — "Demo: simulated connection" label is visible.
+- [ ] **6.3** File deletion does not affect the filesystem — demo notice appears after confirmation.
+- [ ] **6.4** Database verification always succeeds — "Verified (demo)" label is shown.
+- [ ] **6.5** Scan history is not persisted across sessions.
+
+---
+
+> **All phases passed?** The app is ready for demonstration, stakeholder review, and UX validation. Backend integration (real scan API, storage connectors, persistent history) is the next production milestone per the project roadmap.
 

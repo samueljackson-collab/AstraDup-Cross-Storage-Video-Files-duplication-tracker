@@ -200,7 +200,7 @@ const Settings: React.FC = () => {
   
   const handleVerifyDb = (id: string) => {
       setDatabases(dbs => dbs.map(db => db.id === id ? { ...db, verifying: true } : db));
-      // Simulate verification API call
+      // DEMO ONLY: Simulates a connectivity check. Replace with a real HTTP health-check in production.
       setTimeout(() => {
           setDatabases(dbs => dbs.map(db => db.id === id ? { ...db, verifying: false, verified: true } : db));
       }, 1500);
@@ -317,7 +317,7 @@ const Settings: React.FC = () => {
                            {db.verifying ? <Spinner /> : 'Verify'}
                         </Button>
                       ) : (
-                        <span className="flex items-center text-xs text-green-400"><CheckCircleIcon className="h-4 w-4 mr-1.5" /> Verified</span>
+                        <span className="flex items-center text-xs text-green-400" title="Demo: connectivity not verified against a live endpoint"><CheckCircleIcon className="h-4 w-4 mr-1.5" /> Verified (demo)</span>
                       )}
                       <button onClick={() => handleRemoveCustomDb(db.id)} className="text-green-700 hover:text-red-400"><TrashIcon className="w-4 h-4" /></button>
                     </>
@@ -326,6 +326,43 @@ const Settings: React.FC = () => {
                 </div>
               </div>
            ))}
+           <div className="py-4 border-b border-green-800">
+                <p className="text-base font-bold text-green-400 mb-2">Find Databases with AI</p>
+                <p className="text-sm text-green-700 mb-3">Use AI-powered web search to discover relevant metadata databases by topic (e.g. "anime databases", "sports statistics").</p>
+                <div className="flex gap-2">
+                    <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                        placeholder="e.g. anime, documentary, sports..."
+                        className="flex-grow bg-black border border-green-700 rounded-md py-2 px-3 text-green-300 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none text-base"
+                    />
+                    <Button onClick={handleSearch} disabled={isSearching || !searchQuery.trim()} variant="secondary">
+                        {isSearching ? <Spinner /> : 'Search'}
+                    </Button>
+                </div>
+                {searchError && <p className="text-sm text-red-400 mt-2">{searchError}</p>}
+                {searchResults.length > 0 && (
+                    <ul className="mt-3 space-y-1">
+                        {searchResults.map(result => (
+                            <li key={result} className="flex items-center justify-between bg-green-900/20 px-3 py-2 rounded-md">
+                                <span className="text-sm text-green-400">{result}</span>
+                                <Button
+                                    variant="secondary"
+                                    className="text-xs py-1 px-2 ml-4"
+                                    onClick={() => {
+                                        setCustomDbName(result);
+                                        setSearchResults(prev => prev.filter(r => r !== result));
+                                    }}
+                                >
+                                    Use
+                                </Button>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </div>
            <div className="py-4">
                  <p className="text-base font-bold text-green-400 mb-2">Add Custom Source Manually</p>
                 <div className="flex flex-col sm:flex-row gap-2">

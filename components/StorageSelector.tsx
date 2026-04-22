@@ -53,15 +53,18 @@ const StorageSelector: React.FC<StorageSelectorProps> = ({ sources, cloudSourceT
             </div>
 
             {isCloud && !isConnected && (
-                <Button
-                    variant="secondary"
-                    className="w-full text-xs"
-                    onClick={() => onConnect(source.id)}
-                    disabled={isConnecting}
-                >
-                    {isConnecting ? <Spinner /> : <LinkIcon className="h-4 w-4 mr-2" />}
-                    {isConnecting ? 'Connecting...' : 'Connect'}
-                </Button>
+                <div className="w-full">
+                    <Button
+                        variant="secondary"
+                        className="w-full text-xs"
+                        onClick={() => onConnect(source.id)}
+                        disabled={isConnecting}
+                    >
+                        {isConnecting ? <Spinner /> : <LinkIcon className="h-4 w-4 mr-2" />}
+                        {isConnecting ? 'Connecting...' : 'Connect'}
+                    </Button>
+                    <p className="text-green-800 text-xs text-center mt-1">Demo: simulated connection</p>
+                </div>
             )}
           </div>
         );
