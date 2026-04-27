@@ -56,7 +56,7 @@ const ConfirmationModal: React.FC<{ file: AnyFile | null, onConfirm: () => void,
 };
 
 // --- Video Comparison ---
-const FILENAME_TEMPLATE = "{title} ({year})"; // In a real app, this would come from settings
+const FILENAME_TEMPLATE = "{title} ({year})"; // Configurable in a future settings integration; currently uses a fixed default.
 
 const EnrichmentPanel: React.FC<{ file: VideoFile }> = ({ file }) => {
     const [suggestions, setSuggestions] = useState<EnrichedVideoMetadata | null>(null);
@@ -101,7 +101,12 @@ const EnrichmentPanel: React.FC<{ file: VideoFile }> = ({ file }) => {
             let jsonString = response.text.trim();
             if (jsonString.startsWith('```json')) jsonString = jsonString.substring(7, jsonString.length - 3).trim();
             else if (jsonString.startsWith('```')) jsonString = jsonString.substring(3, jsonString.length - 3).trim();
-            const data = JSON.parse(jsonString);
+            let data: EnrichedVideoMetadata;
+            try {
+                data = JSON.parse(jsonString);
+            } catch {
+                throw new Error("AI returned an unrecognized response format. Please try again.");
+            }
 
             setStatus('Verifying with web search...');
             const searchQuery = `"${data.title}" ${data.releaseDate ? `(${data.releaseDate.split('-')[0]})` : ''} movie details`;
@@ -252,7 +257,7 @@ const DocumentColumn: React.FC<{ file: DocumentFile, original: DocumentFile, onD
         </dl>
         <div className="bg-black rounded-lg p-3 text-sm text-green-500 flex-grow overflow-y-auto font-mono h-96">
            {showDiff ? (
-            <p>Lorem ipsum dolor... <span className="bg-red-900/50 text-red-300 line-through">old text</span> <span className="bg-green-900/50 text-green-300">new text</span></p>
+            <p className="text-green-700 italic">Text diff visualization requires real file content analysis — not available in demo mode. Switch to content view to read each document.</p>
            ) : (
             <p>{file.content}</p>
            )}
@@ -268,6 +273,7 @@ const ComparisonPage: React.FC = () => {
     const [showPixelDiff, setShowPixelDiff] = useState(false);
     const [showTextDiff, setShowTextDiff] = useState(false);
     const [confirmingDelete, setConfirmingDelete] = useState<AnyFile | null>(null);
+    const [demoNotice, setDemoNotice] = useState('');
 
     useEffect(() => {
         if (fileId1 && fileId2) {
@@ -282,7 +288,9 @@ const ComparisonPage: React.FC = () => {
     const handleConfirmDelete = () => {
         if (confirmingDelete) {
             setConfirmingDelete(null);
-            navigate(-1);
+            // DEMO ONLY: No file is actually deleted. Display a notice and navigate back.
+            setDemoNotice(`Demo mode: "${confirmingDelete.name}" was flagged for deletion in the UI only. No files were modified on disk.`);
+            setTimeout(() => { setDemoNotice(''); navigate(-1); }, 4000);
         }
     };
 
@@ -323,6 +331,12 @@ const ComparisonPage: React.FC = () => {
     return (
         <div>
             <ConfirmationModal file={confirmingDelete} onConfirm={handleConfirmDelete} onCancel={() => setConfirmingDelete(null)} />
+            {demoNotice && (
+                <div className="mb-4 flex items-start gap-3 rounded-lg border border-green-600 bg-green-900/20 px-4 py-3 text-sm text-green-400">
+                    <span className="font-bold shrink-0">Demo:</span>
+                    <span>{demoNotice}</span>
+                </div>
+            )}
             <Button variant="secondary" onClick={() => navigate(-1)} className="mb-6"><ArrowLeftIcon className="h-4 w-4 mr-2" />Back</Button>
             <h1 className="text-4xl font-extrabold tracking-tight text-green-400 mb-8 capitalize">{file1.fileType} Duplicate Comparison</h1>
             <div className={`flex flex-col ${file1.fileType === 'document' ? 'lg:flex-row' : 'md:flex-row'} gap-8`}>
