@@ -88,7 +88,10 @@ export const groundedQuery = async (prompt: string): Promise<GenerateContentResp
  * Analyzes video frames to extract structured metadata like title, plot, actors, and genre.
  */
 export const enrichVideoMetadata = async (videoFrames: { data: string, mimeType: string }[]): Promise<GenerateContentResponse> => {
-    const prompt = `Analyze the following video frames. If this is a known movie, TV show, or commercial, identify it and provide its title, a brief plot summary, main actors, and genre. If it's user-generated content, provide a descriptive title, a summary of the action, and suggest relevant genres/tags.`;
+    const prompt = `Analyze the following video frames. Utilize your internal knowledge of movie, TV show, and tech databases (like TMDb, IMDb, TVDB) to help identify this content. 
+    If this is a known movie, TV show, or commercial, provide its title, a brief plot summary, main actors, and genre. 
+    If it's user-generated content, provide a descriptive title, a summary of the action, and suggest relevant genres/tags.
+    Focus on creating high-quality, rich metadata.`;
 
     const textPart = { text: prompt };
     const imageParts = videoFrames.map(frame => ({

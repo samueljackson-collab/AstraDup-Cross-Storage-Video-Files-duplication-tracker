@@ -132,6 +132,8 @@ const FileDetail: React.FC = () => {
                     <DetailItem label="Duration" value={(file as VideoFile).duration} mono />
                     <DetailItem label="Resolution" value={(file as VideoFile).resolution} mono />
                     <DetailItem label="Codec" value={(file as VideoFile).codec} />
+                    <DetailItem label="Bitrate" value={(file as VideoFile).bitrate} />
+                    <DetailItem label="Frame Rate" value={(file as VideoFile).frameRate} />
                 </>}
                  {file.fileType === 'image' && <DetailItem label="Resolution" value={(file as ImageFile).resolution} mono />}
                  {file.fileType === 'document' && <>

@@ -1,8 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import Button from '../components/Button';
-import { PlusIcon, TrashIcon, CheckCircleIcon } from '../components/Icons';
+import { PlusIcon, TrashIcon, CheckCircleIcon, Wifi, Bluetooth, Share2, Globe, Cpu, Smartphone, Laptop, Database as DbIcon, ShieldCheck } from '../components/Icons';
 import { groundedQuery } from '../services/gemini';
 import Spinner from '../components/Spinner';
+
+interface Device {
+    id: string;
+    name: string;
+    type: 'laptop' | 'mobile' | 'nas' | 'remote';
+    method: 'wifi' | 'bluetooth' | 'ftp' | 'remote' | 'cloud';
+    status: 'connected' | 'offline';
+}
 
 const Toggle: React.FC<{ checked: boolean; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; }> = ({ checked, onChange }) => (
     <label className="relative inline-flex items-center cursor-pointer">
@@ -31,6 +39,11 @@ const SETTINGS_STORAGE_KEY = 'astradup_settings';
 
 const Settings: React.FC = () => {
   const [databases, setDatabases] = useState<Database[]>(DEFAULT_DATABASES);
+  const [devices, setDevices] = useState<Device[]>([
+      { id: 'dev-1', name: 'Work MacBook Pro', type: 'laptop', method: 'wifi', status: 'connected' },
+      { id: 'dev-2', name: 'Personal iPhone', type: 'mobile', method: 'bluetooth', status: 'offline' },
+      { id: 'dev-3', name: 'Home Media Server', type: 'nas', method: 'ftp', status: 'connected' },
+  ]);
   const [customDbName, setCustomDbName] = useState('');
   const [customDbUrl, setCustomDbUrl] = useState('');
   
@@ -132,6 +145,57 @@ const Settings: React.FC = () => {
       <h1 className="text-4xl font-extrabold tracking-tight text-green-400 mb-2">Settings</h1>
       <p className="text-green-600 mb-8 text-lg">Configure AstraDup to fit your workflow.</p>
       
+      <div className="bg-black border border-green-800 rounded-lg mt-8">
+        <div className="p-6">
+          <h2 className="text-2xl font-bold text-green-400">Device & Nexus AI Connectivity</h2>
+          <p className="text-base text-green-600 mt-1">Manage cross-device synchronization and third-party AI explorer integration.</p>
+        </div>
+        <div className="px-6 pb-6 space-y-6">
+            <div>
+                <h3 className="text-lg font-bold text-green-500 mb-3 flex items-center gap-2">
+                    <Share2 className="w-5 h-5" /> Nexus AI File Explorer
+                </h3>
+                <div className="bg-green-900/10 border border-green-800 p-4 rounded-lg flex items-center justify-between">
+                    <div>
+                        <p className="text-base text-green-400 font-bold">Status: Connected</p>
+                        <p className="text-xs text-green-700">Syncing duplicates with Nexus AI organization system.</p>
+                    </div>
+                    <Button variant="secondary" className="text-xs">Disconnect</Button>
+                </div>
+            </div>
+
+            <div>
+                <h3 className="text-lg font-bold text-green-500 mb-3 flex items-center gap-2">
+                    <Globe className="w-5 h-5" /> Connected Devices
+                </h3>
+                <div className="space-y-2">
+                    {devices.map(device => (
+                        <div key={device.id} className="bg-black/50 border border-green-900 p-3 rounded flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                {device.type === 'laptop' ? <Laptop className="w-5 h-5 text-green-600" /> : <Smartphone className="w-5 h-5 text-green-600" />}
+                                <div>
+                                    <p className="text-sm font-bold text-green-300">{device.name}</p>
+                                    <div className="flex items-center gap-2 text-[10px] text-green-700 uppercase tracking-tighter">
+                                        <span className="flex items-center gap-1">
+                                            {device.method === 'wifi' ? <Wifi className="w-3 h-3" /> : <Bluetooth className="w-3 h-3" />}
+                                            {device.method}
+                                        </span>
+                                        <span>•</span>
+                                        <span className={device.status === 'connected' ? 'text-green-400' : 'text-red-800'}>{device.status}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <button className="text-green-800 hover:text-red-500 transition-colors"><TrashIcon className="w-4 h-4" /></button>
+                        </div>
+                    ))}
+                    <button className="w-full py-2 border border-dashed border-green-800 rounded text-xs text-green-700 hover:text-green-400 hover:border-green-400 transition-all flex items-center justify-center gap-2">
+                        <PlusIcon className="w-4 h-4" /> Add New Device (FTP, SSH, Bluetooth)
+                    </button>
+                </div>
+            </div>
+        </div>
+      </div>
+
       <div className="bg-black border border-green-800 rounded-lg mt-8">
         <div className="p-6">
           <h2 className="text-2xl font-bold text-green-400">Scan Settings</h2>

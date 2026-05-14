@@ -7,34 +7,34 @@ const BUNNY_VIDEO_URL = "http://commondatastorage.googleapis.com/gtv-videos-buck
 const MOCK_FILES: { [key: string]: AnyFile } = {
     // Videos
     'vid1': {
-        id: 'vid1', fileType: 'video', name: 'vacation_beach.mp4', path: '/local/videos/vacation_beach.mp4', sizeMB: 250, duration: '00:02:30', resolution: '1920x1080', codec: 'H.264', thumbnailUrl: 'https://picsum.photos/seed/vid1/400/225', videoUrl: BUNNY_VIDEO_URL,
+        id: 'vid1', fileType: 'video', name: 'vacation_beach.mp4', path: '/local/videos/vacation_beach.mp4', sizeMB: 250, duration: '00:02:30', resolution: '1920x1080', codec: 'H.264', bitrate: '12 Mbps', frameRate: '30 fps', createdAt: '2023-01-10T10:00:00Z', thumbnailUrl: 'https://picsum.photos/seed/vid1/400/225', videoUrl: BUNNY_VIDEO_URL,
         enrichedData: { title: 'Beach Vacation Highlights', plot: 'A collection of memorable moments from a sunny beach vacation.', actors: [], genre: 'Home Video' },
         analysis: { pHash: { value: 'f0689c9c86846ee4', confidence: 99 }, dHash: { value: '94a4a4b49494b494', confidence: 98 }, sceneEmbeddings: { value: null, confidence: 92 }, audioFingerprint: { value: 'AQADtGKZlUVa_...', confidence: 100 }, faceClusters: { value: 3, confidence: 95 } }
     },
     'vid2': {
-        id: 'vid2', fileType: 'video', name: 'IMG_1234.mov', path: '/nas/backups/IMG_1234.mov', sizeMB: 180, duration: '00:02:29', resolution: '1280x720', codec: 'H.265', thumbnailUrl: 'https://picsum.photos/seed/vid2/400/225', videoUrl: BUNNY_VIDEO_URL,
+        id: 'vid2', fileType: 'video', name: 'IMG_1234.mov', path: '/nas/backups/IMG_1234.mov', sizeMB: 180, duration: '00:02:29', resolution: '1280x720', codec: 'H.265', bitrate: '8 Mbps', frameRate: '24 fps', createdAt: '2023-05-12T15:30:00Z', thumbnailUrl: 'https://picsum.photos/seed/vid2/400/225', videoUrl: BUNNY_VIDEO_URL,
         enrichedData: { title: 'Beach Trip', plot: 'Raw footage from a beach trip.', actors: [], genre: 'Home Video' },
         analysis: { pHash: { value: 'f0689c9c86846ee4', confidence: 99 }, dHash: { value: '94a4a4b49494b494', confidence: 98 }, sceneEmbeddings: { value: null, confidence: 91 }, audioFingerprint: { value: 'AQADtGKZlUVa_...', confidence: 100 }, faceClusters: { value: 3, confidence: 95 } }
     },
     // Images
     'img1': {
-        id: 'img1', fileType: 'image', name: 'sunset_coast.jpg', path: '/local/photos/2023/sunset_coast.jpg', sizeMB: 12, resolution: '6000x4000', thumbnailUrl: 'https://picsum.photos/seed/img1/400/225',
+        id: 'img1', fileType: 'image', name: 'sunset_coast.jpg', path: '/local/photos/2023/sunset_coast.jpg', sizeMB: 12, resolution: '6000x4000', createdAt: '2023-08-15T18:30:00Z', thumbnailUrl: 'https://picsum.photos/seed/img1/400/225',
         exif: { cameraModel: 'Sony A7 III', dateTaken: '2023-08-15T18:30:00', iso: 100 },
         analysis: { pHash: { value: 'e5e5c3c33030b2b2', confidence: 100 }, dHash: { value: 'c9c9c9e1e1696969', confidence: 100 }, objectTags: { value: ['sunset', 'beach', 'ocean', 'sky'], confidence: 94 } }
     },
     'img2': {
-        id: 'img2', fileType: 'image', name: 'DSC01234.arw', path: '/gdrive/photos_raw/DSC01234.arw', sizeMB: 45, resolution: '6000x4000', thumbnailUrl: 'https://picsum.photos/seed/img2/400/225',
+        id: 'img2', fileType: 'image', name: 'DSC01234.arw', path: '/gdrive/photos_raw/DSC01234.arw', sizeMB: 45, resolution: '6000x4000', createdAt: '2023-08-15T18:40:00Z', thumbnailUrl: 'https://picsum.photos/seed/img2/400/225',
         exif: { cameraModel: 'Sony A7 III', dateTaken: '2023-08-15T18:30:05', iso: 100 },
         analysis: { pHash: { value: 'e5e5c3c33030b2b2', confidence: 100 }, dHash: { value: 'c9c9c9e1e1696969', confidence: 100 }, objectTags: { value: ['sunset', 'ocean', 'coastline'], confidence: 92 } }
     },
     // Documents
     'doc1': {
-        id: 'doc1', fileType: 'document', name: 'Project_Proposal_Final.pdf', path: '/nas/work/projects/Project_Proposal_Final.pdf', sizeMB: 2, pageCount: 15, wordCount: 3500, author: 'Jane Doe', thumbnailUrl: 'https://picsum.photos/seed/doc1/400/225',
+        id: 'doc1', fileType: 'document', name: 'Project_Proposal_Final.pdf', path: '/nas/work/projects/Project_Proposal_Final.pdf', sizeMB: 2, pageCount: 15, wordCount: 3500, author: 'Jane Doe', createdAt: '2023-11-20T09:00:00Z', thumbnailUrl: 'https://picsum.photos/seed/doc1/400/225',
         content: "Project AstraDup: A proposal to leverage multi-modal AI for cross-storage video de-duplication. This document outlines the project's scope, objectives, and technical approach. The system will analyze video content using perceptual hashes, audio fingerprints, and scene embeddings to identify duplicates regardless of format or resolution changes. The primary goal is to reclaim significant storage space across heterogeneous environments including local drives, NAS, and cloud buckets.",
         analysis: { textHash: { value: 'a1b2c3d4e5f6...', confidence: 100 }, keywordDensity: { value: { 'synergy': 12, 'blockchain': 8 }, confidence: 90 } }
     },
     'doc2': {
-        id: 'doc2', fileType: 'document', name: 'Project_Proposal_v1.2.docx', path: '/local/documents/archive/Project_Proposal_v1.2.docx', sizeMB: 1.8, pageCount: 15, wordCount: 3450, author: 'Jane Doe', thumbnailUrl: 'https://picsum.photos/seed/doc2/400/225',
+        id: 'doc2', fileType: 'document', name: 'Project_Proposal_v1.2.docx', path: '/local/documents/archive/Project_Proposal_v1.2.docx', sizeMB: 1.8, pageCount: 15, wordCount: 3450, author: 'Jane Doe', createdAt: '2023-11-15T14:30:00Z', thumbnailUrl: 'https://picsum.photos/seed/doc2/400/225',
         content: "Project Proposal: AstraDup. Version 1.2. This proposal details the implementation of an advanced de-duplication system for video files. By employing AI-driven analysis of visual and audio streams, AstraDup aims to identify and flag redundant video files across diverse storage platforms. Key deliverables include a user-friendly interface for reviewing duplicates and a robust backend for processing large media libraries. This initiative promises substantial storage optimization and improved media management.",
         analysis: { textHash: { value: 'a1b2c3d4e5f6...', confidence: 99 }, keywordDensity: { value: { 'synergy': 11, 'blockchain': 8 }, confidence: 88 } }
     }

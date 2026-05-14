@@ -11,13 +11,14 @@ import { DetailItem } from '../components/DetailViews';
 import CustomVideoPlayer from '../components/CustomVideoPlayer';
 
 // --- Shared Components ---
-const ActionPanel: React.FC<{ fileToDelete: AnyFile, onDelete: (file: AnyFile) => void }> = ({ fileToDelete, onDelete }) => {
+const ActionPanel: React.FC<{ fileToDelete: AnyFile, onDelete: (file: AnyFile) => void, isBestVersion?: boolean }> = ({ fileToDelete, onDelete, isBestVersion }) => {
     return (
-        <div className="bg-black border border-green-800 rounded-lg p-3 mt-4">
-             <Button variant="primary" className="text-sm w-full" onClick={() => onDelete(fileToDelete)}>
+        <div className={`bg-black border ${isBestVersion ? 'border-green-400' : 'border-green-800'} rounded-lg p-3 mt-4`}>
+             <Button variant={isBestVersion ? 'primary' : 'secondary'} className="text-sm w-full" onClick={() => onDelete(fileToDelete)}>
                 <CheckCircleIcon className="h-4 w-4 mr-2" />
-                Keep This File
+                {isBestVersion ? 'Keep Best Version' : 'Keep This File'}
             </Button>
+            {isBestVersion && <p className="text-[10px] text-green-400 mt-2 text-center font-bold">RECOMENDED: Higher quality or more recent.</p>}
         </div>
     )
 };
@@ -82,6 +83,12 @@ const EnrichmentPanel: React.FC<{ file: VideoFile }> = ({ file }) => {
             }
         }
     }, [suggestions, file.name]);
+
+    const handleFieldChange = (field: keyof EnrichedVideoMetadata | 'rename', value: any) => {
+        if (suggestions) {
+            setSuggestions({ ...suggestions, [field]: value });
+        }
+    };
     
     const handleEnrich = async () => {
         if (!videoRef.current || !canvasRef.current) return;
@@ -166,19 +173,41 @@ const EnrichmentPanel: React.FC<{ file: VideoFile }> = ({ file }) => {
                     <>
                         <h3 className="text-lg font-bold text-green-400 mb-2">Enrichment Suggestions</h3>
                         <p className="text-sm text-green-600 mb-4">Source: <a href={suggestions.source.url} target="_blank" rel="noopener noreferrer" className="text-green-400 hover:underline">{suggestions.source.name}</a></p>
-                        <div className="space-y-3 text-sm">
+                        <div className="space-y-4 text-sm">
                             <div>
-                                <label className="flex items-center"><input type="checkbox" checked={selectedChanges.title} onChange={e => setSelectedChanges({...selectedChanges, title: e.target.checked})} className="h-4 w-4 rounded bg-gray-900 border-green-700 text-green-500 focus:ring-green-500" /> <span className="ml-2 text-green-600">Title</span></label>
-                                <input type="text" value={manualTitle} onChange={e => setManualTitle(e.target.value)} className="w-full bg-black border border-green-700 rounded-md py-1 px-2 text-green-300 mt-1 text-sm" />
+                                <label className="flex items-center mb-1"><input type="checkbox" checked={selectedChanges.title} onChange={e => setSelectedChanges({...selectedChanges, title: e.target.checked})} className="h-4 w-4 rounded bg-gray-900 border-green-700 text-green-500 focus:ring-green-500" /> <span className="ml-2 text-green-600">Title</span></label>
+                                <input type="text" value={manualTitle} onChange={e => setManualTitle(e.target.value)} className="w-full bg-black border border-green-700 rounded-md py-1 px-2 text-green-300 ml-6 text-sm" />
                             </div>
                             <div>
-                                <label className="flex items-center"><input type="checkbox" checked={selectedChanges.plot} onChange={e => setSelectedChanges({...selectedChanges, plot: e.target.checked})} className="h-4 w-4 rounded bg-gray-900 border-green-700 text-green-500 focus:ring-green-500" /> <span className="ml-2 text-green-600">Plot Summary</span></label>
-                                <p className="text-green-500 mt-1 p-2 bg-green-900/20 rounded">{suggestions.plot}</p>
+                                <label className="flex items-center mb-1"><input type="checkbox" checked={selectedChanges.plot} onChange={e => setSelectedChanges({...selectedChanges, plot: e.target.checked})} className="h-4 w-4 rounded bg-gray-900 border-green-700 text-green-500 focus:ring-green-500" /> <span className="ml-2 text-green-600">Plot Summary</span></label>
+                                <textarea 
+                                    value={suggestions.plot} 
+                                    onChange={e => handleFieldChange('plot', e.target.value)}
+                                    className="w-full bg-black border border-green-700 rounded-md py-1 px-2 text-green-400 ml-6 h-20 text-sm"
+                                />
+                            </div>
+                            <div>
+                                <label className="flex items-center mb-1"><input type="checkbox" checked={selectedChanges.genre} onChange={e => setSelectedChanges({...selectedChanges, genre: e.target.checked})} className="h-4 w-4 rounded bg-gray-900 border-green-700 text-green-500 focus:ring-green-500" /> <span className="ml-2 text-green-600">Genre</span></label>
+                                <input 
+                                    type="text" 
+                                    value={suggestions.genre} 
+                                    onChange={e => handleFieldChange('genre', e.target.value)}
+                                    className="w-full bg-black border border-green-700 rounded-md py-1 px-2 text-green-400 ml-6 text-sm"
+                                />
+                            </div>
+                            <div>
+                                <label className="flex items-center mb-1"><input type="checkbox" checked={selectedChanges.actors} onChange={e => setSelectedChanges({...selectedChanges, actors: e.target.checked})} className="h-4 w-4 rounded bg-gray-900 border-green-700 text-green-500 focus:ring-green-500" /> <span className="ml-2 text-green-600">Actors</span></label>
+                                <input 
+                                    type="text" 
+                                    value={suggestions.actors.join(', ')} 
+                                    onChange={e => handleFieldChange('actors', e.target.value.split(',').map((s: string) => s.trim()))}
+                                    className="w-full bg-black border border-green-700 rounded-md py-1 px-2 text-green-400 ml-6 text-sm"
+                                />
                             </div>
                              <hr className="border-green-800" />
                             <div>
                                 <label className="flex items-center"><input type="checkbox" checked={selectedChanges.rename} onChange={e => setSelectedChanges({...selectedChanges, rename: e.target.checked})} className="h-4 w-4 rounded bg-gray-900 border-green-700 text-green-500 focus:ring-green-500" /> <span className="ml-2 text-green-600">Suggest New Filename</span></label>
-                                <p className="text-green-400 mt-1 p-2 bg-green-900/20 rounded font-mono break-all">{suggestedFilename}</p>
+                                <p className="text-green-400 mt-1 p-2 bg-green-900/20 rounded font-mono break-all ml-6">{suggestedFilename}</p>
                             </div>
                         </div>
                         <Button onClick={handleApply} className="w-full mt-4">Confirm & Apply Changes</Button>
@@ -189,7 +218,7 @@ const EnrichmentPanel: React.FC<{ file: VideoFile }> = ({ file }) => {
     );
 };
 
-const VideoColumn: React.FC<{ file: VideoFile, original: VideoFile, onDelete: (file: AnyFile) => void }> = ({ file, original, onDelete }) => (
+const VideoColumn: React.FC<{ file: VideoFile, original: VideoFile, onDelete: (file: AnyFile) => void, isBestVersion: boolean }> = ({ file, original, onDelete, isBestVersion }) => (
     <div className="w-full">
         <div className="relative">
             <CustomVideoPlayer file={file} />
@@ -197,14 +226,17 @@ const VideoColumn: React.FC<{ file: VideoFile, original: VideoFile, onDelete: (f
         </div>
         <h2 className="text-2xl font-extrabold text-green-400 mt-4 truncate">{file.name}</h2>
         <p className="text-sm text-green-600 font-mono break-all">{file.path}</p>
-        <ActionPanel fileToDelete={original} onDelete={onDelete} />
+        <ActionPanel fileToDelete={original} onDelete={onDelete} isBestVersion={isBestVersion} />
         <div className="bg-black border border-green-800 rounded-lg p-4 mt-4">
-            <h3 className="text-lg font-bold text-green-400 border-b border-green-800 pb-2 mb-3">File Metadata</h3>
+            <h3 className="text-lg font-bold text-green-400 border-b border-green-800 pb-2 mb-3">File Metrics</h3>
             <dl className="grid grid-cols-2 gap-x-4 gap-y-4">
                 <DetailItem label="Size" value={`${file.sizeMB} MB`} highlight={file.sizeMB !== original.sizeMB} />
+                <DetailItem label="Created" value={new Date(file.createdAt).toLocaleDateString()} highlight={file.createdAt !== original.createdAt} />
                 <DetailItem label="Duration" value={file.duration} mono highlight={file.duration !== original.duration} />
                 <DetailItem label="Resolution" value={file.resolution} mono highlight={file.resolution !== original.resolution} />
                 <DetailItem label="Codec" value={file.codec} highlight={file.codec !== original.codec} />
+                <DetailItem label="Bitrate" value={file.bitrate} highlight={file.bitrate !== original.bitrate} />
+                <DetailItem label="Frame Rate" value={file.frameRate} highlight={file.frameRate !== original.frameRate} />
             </dl>
         </div>
         <EnrichmentPanel file={file} />
@@ -212,7 +244,7 @@ const VideoColumn: React.FC<{ file: VideoFile, original: VideoFile, onDelete: (f
 );
 
 // --- Image Comparison ---
-const ImageColumn: React.FC<{ file: ImageFile, original: ImageFile, onDelete: (file: AnyFile) => void, showDiff?: boolean, overlaySrc?: string }> = ({ file, original, onDelete, showDiff, overlaySrc }) => {
+const ImageColumn: React.FC<{ file: ImageFile, original: ImageFile, onDelete: (file: AnyFile) => void, showDiff?: boolean, overlaySrc?: string, isBestVersion: boolean }> = ({ file, original, onDelete, showDiff, overlaySrc, isBestVersion }) => {
     const hasExifDiff = file.resolution !== original.resolution || file.exif.cameraModel !== original.exif.cameraModel || file.exif.dateTaken !== original.exif.dateTaken || file.exif.iso !== original.exif.iso;
     return (
         <div className="w-full">
@@ -222,10 +254,12 @@ const ImageColumn: React.FC<{ file: ImageFile, original: ImageFile, onDelete: (f
             </div>
             <h2 className="text-2xl font-extrabold text-green-400 mt-4 truncate">{file.name}</h2>
             <p className="text-sm text-green-600 font-mono break-all">{file.path}</p>
-            <ActionPanel fileToDelete={original} onDelete={onDelete} />
+            <ActionPanel fileToDelete={original} onDelete={onDelete} isBestVersion={isBestVersion} />
             <div className="bg-black border border-green-800 rounded-lg p-4 mt-4">
-                <h3 className="text-lg font-bold text-green-400 border-b border-green-800 pb-2 mb-3">EXIF Data</h3>
+                <h3 className="text-lg font-bold text-green-400 border-b border-green-800 pb-2 mb-3">Image Metrics</h3>
                 <dl className="grid grid-cols-2 gap-x-4 gap-y-4">
+                    <DetailItem label="Size" value={`${file.sizeMB} MB`} highlight={file.sizeMB !== original.sizeMB} />
+                    <DetailItem label="Created" value={new Date(file.createdAt).toLocaleDateString()} highlight={file.createdAt !== original.createdAt} />
                     <DetailItem label="Resolution" value={file.resolution} mono highlight={file.resolution !== original.resolution} />
                     <DetailItem label="Camera" value={file.exif.cameraModel} highlight={file.exif.cameraModel !== original.exif.cameraModel} />
                     <DetailItem label="Date Taken" value={new Date(file.exif.dateTaken).toLocaleString()} highlight={file.exif.dateTaken !== original.exif.dateTaken} />
@@ -237,21 +271,26 @@ const ImageColumn: React.FC<{ file: ImageFile, original: ImageFile, onDelete: (f
 };
 
 // --- Document Comparison ---
-const DocumentColumn: React.FC<{ file: DocumentFile, original: DocumentFile, onDelete: (file: AnyFile) => void, showDiff: boolean }> = ({ file, original, onDelete, showDiff }) => (
+const DocumentColumn: React.FC<{ file: DocumentFile, original: DocumentFile, onDelete: (file: AnyFile) => void, showDiff: boolean, isBestVersion: boolean }> = ({ file, original, onDelete, showDiff, isBestVersion }) => (
     <div className="w-full bg-black border border-green-800 rounded-lg p-4 flex flex-col">
         <div className="flex justify-between items-start">
             <h2 className="text-2xl font-extrabold text-green-400 truncate">{file.name}</h2>
             {file.pageCount !== original.pageCount && <span className="flex-shrink-0 ml-2 bg-green-900/80 text-green-300 text-sm font-bold px-2 py-1 rounded-full">{file.pageCount} pages</span>}
         </div>
         <p className="text-sm text-green-600 font-mono break-all mb-4">{file.path}</p>
-        <ActionPanel fileToDelete={original} onDelete={onDelete} />
-        <dl className="grid grid-cols-2 gap-x-4 gap-y-4 my-4">
-            <DetailItem label="Size" value={`${file.sizeMB} MB`} highlight={file.sizeMB !== original.sizeMB} />
-            <DetailItem label="Page Count" value={file.pageCount} highlight={file.pageCount !== original.pageCount} />
-        </dl>
-        <div className="bg-black rounded-lg p-3 text-sm text-green-500 flex-grow overflow-y-auto font-mono h-96">
+        <ActionPanel fileToDelete={original} onDelete={onDelete} isBestVersion={isBestVersion} />
+        <div className="bg-black border border-green-900/30 rounded-lg p-3 my-4 overflow-hidden">
+             <h3 className="text-xs font-bold text-green-700 uppercase tracking-widest mb-2">Metrics</h3>
+            <dl className="grid grid-cols-2 gap-x-2 gap-y-2">
+                <DetailItem label="Size" value={`${file.sizeMB} MB`} highlight={file.sizeMB !== original.sizeMB} />
+                <DetailItem label="Created" value={new Date(file.createdAt).toLocaleDateString()} highlight={file.createdAt !== original.createdAt} />
+                <DetailItem label="Page Count" value={file.pageCount} highlight={file.pageCount !== original.pageCount} />
+                <DetailItem label="Author" value={file.author} highlight={file.author !== original.author} />
+            </dl>
+        </div>
+        <div className="bg-black border border-green-900/50 rounded-lg p-3 text-sm text-green-500 flex-grow overflow-y-auto font-mono h-60">
            {showDiff ? (
-            <p>Lorem ipsum dolor... <span className="bg-red-900/50 text-red-300 line-through">old text</span> <span className="bg-green-900/50 text-green-300">new text</span></p>
+            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. <span className="bg-red-900/50 text-red-300 line-through px-1">sed do eiusmod tempor</span> <span className="bg-green-900/50 text-green-300 px-1 font-bold">incididunt ut labore et dolore</span> magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
            ) : (
             <p>{file.content}</p>
            )}
@@ -267,6 +306,43 @@ const ComparisonPage: React.FC = () => {
     const [showPixelDiff, setShowPixelDiff] = useState(false);
     const [showTextDiff, setShowTextDiff] = useState(false);
     const [confirmingDelete, setConfirmingDelete] = useState<AnyFile | null>(null);
+
+    const bestVersionId = useMemo(() => {
+        const [f1, f2] = files;
+        if (!f1 || !f2) return null;
+        
+        // Quality comparison for videos
+        if (f1.fileType === 'video' && f2.fileType === 'video') {
+            const v1 = f1 as VideoFile;
+            const v2 = f2 as VideoFile;
+            
+            // Resolution comparison (e.g. "1920x1080")
+            const getResolutionScore = (res: string) => {
+                const parts = res.split('x').map(Number);
+                return parts.length === 2 ? parts[0] * parts[1] : 0;
+            };
+            
+            const res1 = getResolutionScore(v1.resolution);
+            const res2 = getResolutionScore(v2.resolution);
+            
+            if (res1 > res2) return v1.id;
+            if (res2 > res1) return v2.id;
+        }
+        
+        // Size comparison (bigger is often better quality, but user might want smaller for storage)
+        // Usually, for duplicates, we look for high quality or newest.
+        // Let's prioritize Newest first if quality is equal.
+        const date1 = new Date(f1.createdAt).getTime();
+        const date2 = new Date(f2.createdAt).getTime();
+        
+        if (date1 > date2) return f1.id;
+        if (date2 > date1) return f2.id;
+        
+        if (f1.sizeMB > f2.sizeMB) return f1.id;
+        if (f2.sizeMB > f1.sizeMB) return f2.id;
+        
+        return null;
+    }, [files]);
 
     useEffect(() => {
         if (fileId1 && fileId2) {
@@ -295,25 +371,25 @@ const ComparisonPage: React.FC = () => {
     const renderComparison = () => {
         switch (file1.fileType) {
             case 'video': return <>
-                <VideoColumn file={file1 as VideoFile} original={file2 as VideoFile} onDelete={handleDeleteRequest}/>
+                <VideoColumn file={file1 as VideoFile} original={file2 as VideoFile} onDelete={handleDeleteRequest} isBestVersion={bestVersionId === file1.id}/>
                 <div className="hidden md:flex items-center justify-center px-4"><div className="text-3xl font-bold text-green-800">VS</div></div>
-                <VideoColumn file={file2 as VideoFile} original={file1 as VideoFile} onDelete={handleDeleteRequest}/>
+                <VideoColumn file={file2 as VideoFile} original={file1 as VideoFile} onDelete={handleDeleteRequest} isBestVersion={bestVersionId === file2.id}/>
             </>;
             case 'image': return <>
-                <ImageColumn file={file1 as ImageFile} original={file2 as ImageFile} onDelete={handleDeleteRequest} showDiff={showPixelDiff} overlaySrc={file2.thumbnailUrl} />
+                <ImageColumn file={file1 as ImageFile} original={file2 as ImageFile} onDelete={handleDeleteRequest} showDiff={showPixelDiff} overlaySrc={file2.thumbnailUrl} isBestVersion={bestVersionId === file1.id} />
                 <div className="hidden md:flex flex-col items-center justify-center px-4">
                     <div className="text-3xl font-bold text-green-800 mb-4">VS</div>
                     <Button variant="secondary" className="text-xs" onClick={() => setShowPixelDiff(!showPixelDiff)}>{showPixelDiff ? 'Hide' : 'Show'} Pixel Diff</Button>
                 </div>
-                <ImageColumn file={file2 as ImageFile} original={file1 as ImageFile} onDelete={handleDeleteRequest}/>
+                <ImageColumn file={file2 as ImageFile} original={file1 as ImageFile} onDelete={handleDeleteRequest} isBestVersion={bestVersionId === file2.id} />
             </>;
             case 'document': return <>
-                <DocumentColumn file={file1 as DocumentFile} original={file2 as DocumentFile} onDelete={handleDeleteRequest} showDiff={showTextDiff} />
+                <DocumentColumn file={file1 as DocumentFile} original={file2 as DocumentFile} onDelete={handleDeleteRequest} showDiff={showTextDiff} isBestVersion={bestVersionId === file1.id} />
                  <div className="hidden lg:flex flex-col items-center justify-center px-4">
                     <div className="text-3xl font-bold text-green-800 mb-4">VS</div>
                     <Button variant="secondary" className="text-xs" onClick={() => setShowTextDiff(!showTextDiff)}>{showTextDiff ? 'Hide' : 'Show'} Text Diff</Button>
                 </div>
-                <DocumentColumn file={file2 as DocumentFile} original={file1 as DocumentFile} onDelete={handleDeleteRequest} showDiff={showTextDiff} />
+                <DocumentColumn file={file2 as DocumentFile} original={file1 as DocumentFile} onDelete={handleDeleteRequest} showDiff={showTextDiff} isBestVersion={bestVersionId === file2.id} />
             </>;
             default: return null;
         }

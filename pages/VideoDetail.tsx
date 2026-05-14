@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { FileText, BrainCircuit, History, AlertTriangle, Code, ChevronLeft, Sparkles, Loader } from 'lucide-react';
+import { FileText, BrainCircuit, History, AlertTriangle, Code, ChevronLeft, Sparkles, Loader, ChevronDown, ChevronUp } from 'lucide-react';
 import { enrichVideoMetadata } from '../services/gemini';
 import { extractFramesFromVideo } from '../utils/video';
+import CustomVideoPlayer from '../components/CustomVideoPlayer';
+import { VideoFile } from '../types';
 
 // Placeholder data - replace with actual data fetching
 const mockVideoData = {
@@ -47,8 +49,25 @@ const VideoDetail: React.FC = () => {
   const { fileId } = useParams<{ fileId: string }>();
   const [activeTab, setActiveTab] = useState<Tab>('metadata');
   const [enrichedData, setEnrichedData] = useState<any>(null);
+  const [editableMetadata, setEditableMetadata] = useState<any>(null);
   const [isEnriching, setIsEnriching] = useState(false);
+  const [showEnrichment, setShowEnrichment] = useState(true);
   const [showAllRaw, setShowAllRaw] = useState(false);
+
+  // Convert mock data to VideoFile type for player
+  const videoFile: VideoFile = {
+      ...mockVideoData,
+      fileType: 'video',
+      videoUrl: 'https://archive.org/download/BigBuckBunny_124/BigBuckBunny_512kb.mp4',
+      thumbnailUrl: '',
+      analysis: {
+          pHash: { value: '', confidence: 0 },
+          dHash: { value: '', confidence: 0 },
+          sceneEmbeddings: { value: null, confidence: 0 },
+          audioFingerprint: { value: null, confidence: 0 },
+          faceClusters: { value: null, confidence: 0 }
+      }
+  };
 
   // In a real app, you would fetch data based on fileId
   const video = mockVideoData;
@@ -68,6 +87,7 @@ const VideoDetail: React.FC = () => {
       const text = response.text.trim();
       const data = JSON.parse(text);
       setEnrichedData(data);
+      setEditableMetadata(data);
       // Update the mock data to reflect the enrichment
       mockVideoData.aiAnalysis.summary = data.plot;
       mockVideoData.aiAnalysis.tags = data.genre.split(', ');
@@ -78,6 +98,14 @@ const VideoDetail: React.FC = () => {
     } finally {
       setIsEnriching(false);
     }
+  };
+
+  const handleApplyChanges = () => {
+      if (editableMetadata) {
+          setEnrichedData(editableMetadata);
+          // In a real app, this would be an API call
+          alert("Metadata updated successfully!");
+      }
   };
 
   const renderTabContent = () => {
@@ -97,34 +125,119 @@ const VideoDetail: React.FC = () => {
         );
       case 'ai-analysis':
         return (
-          <div>
-            <h3 className="text-lg font-bold text-green-400 mb-2">AI Summary</h3>
-            <p className="bg-black p-3 rounded-lg border border-green-800/50 mb-4 text-sm">{video.aiAnalysis.summary}</p>
-            <h3 className="text-lg font-bold text-green-400 mb-2">Tags</h3>
-            <div className="flex flex-wrap gap-2 mb-4">
-              {video.aiAnalysis.tags.map(tag => <span key={tag} className="bg-green-900 text-green-300 text-xs font-medium px-2.5 py-0.5 rounded-full">{tag}</span>)}
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div>
+                   <h3 className="text-lg font-bold text-green-400 mb-2">Video Context</h3>
+                   <div className="relative aspect-video bg-black rounded-lg overflow-hidden border border-green-800/50">
+                        <CustomVideoPlayer file={videoFile} />
+                   </div>
+                   <div className="mt-4 flex gap-2">
+                        <button 
+                            onClick={handleEnrichment}
+                            disabled={isEnriching}
+                            className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-200">
+                            {isEnriching ? <Loader className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                            {isEnriching ? 'Analyzing...' : 'Analyze with AI'}
+                        </button>
+                   </div>
+                </div>
+                <div className="space-y-4">
+                    <div>
+                        <h3 className="text-lg font-bold text-green-400 mb-2">Current AI Summary</h3>
+                        <p className="bg-black/50 p-3 rounded-lg border border-green-800/50 text-sm italic">{video.aiAnalysis.summary}</p>
+                    </div>
+                    <div>
+                        <h3 className="text-lg font-bold text-green-400 mb-2">Scene Analysis</h3>
+                        <div className="bg-black/50 p-3 rounded-lg border border-green-800/50 text-sm">
+                            <p>Visual Similarity Score: <span className="text-green-400 font-bold">{video.aiAnalysis.visualSimilarityScore}%</span></p>
+                            <p className="mt-2">Estimated cuts: {video.aiAnalysis.shotDurations.length}</p>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <div className="mt-6 p-4 border border-dashed border-green-700/50 rounded-lg">
-                <div className="flex justify-between items-center mb-2">
-                    <h3 className="text-lg font-bold text-green-400">Enriched Metadata</h3>
-                    <button 
-                        onClick={handleEnrichment}
-                        disabled={isEnriching}
-                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-500 text-white text-sm font-bold py-2 px-3 rounded-lg transition-colors duration-200">
-                        {isEnriching ? <Loader className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                        {isEnriching ? 'Analyzing...' : 'Analyze Video'}
-                    </button>
-                </div>
-                {enrichedData ? (
-                    <div className="text-sm space-y-2">
-                        <p><strong className="text-green-400">Title:</strong> {enrichedData.title}</p>
-                        <p><strong className="text-green-400">Plot:</strong> {enrichedData.plot}</p>
-                        <p><strong className="text-green-400">Actors:</strong> {enrichedData.actors.join(', ')}</p>
-                        <p><strong className="text-green-400">Genre:</strong> {enrichedData.genre}</p>
+            <div className="p-4 border border-green-700/50 bg-green-950/10 rounded-xl overflow-hidden">
+                <button 
+                    onClick={() => setShowEnrichment(!showEnrichment)}
+                    className="w-full flex justify-between items-center text-left mb-2 group">
+                    <div className="flex items-center gap-2 text-green-400">
+                         <BrainCircuit className="w-5 h-5" />
+                         <h3 className="text-xl font-bold">Metadata Enrichment Suggested by AI</h3>
                     </div>
-                ) : (
-                    <p className="text-sm text-gray-400">Click "Analyze Video" to fetch detailed metadata using AI. This can identify movies, shows, or describe the content of the video.</p>
+                    {showEnrichment ? <ChevronUp className="w-5 h-5 text-green-600" /> : <ChevronDown className="w-5 h-5 text-green-600 group-hover:text-green-400" />}
+                </button>
+                
+                {showEnrichment && (
+                    <div className="mt-4 animate-in slide-in-from-top duration-300">
+                        {editableMetadata ? (
+                            <div className="text-sm space-y-4 bg-black/40 p-4 rounded-lg border border-green-900/50">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label htmlFor="enrich-title" className="block text-green-600 mb-1 font-semibold uppercase text-[10px] tracking-widest">Suggested Title</label>
+                                        <input 
+                                            id="enrich-title"
+                                            type="text" 
+                                            value={editableMetadata.title} 
+                                            onChange={e => setEditableMetadata({...editableMetadata, title: e.target.value})}
+                                            className="w-full bg-black/80 border border-green-800 rounded p-2 text-green-300 focus:outline-none focus:border-green-400 transition-colors"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label htmlFor="enrich-genre" className="block text-green-600 mb-1 font-semibold uppercase text-[10px] tracking-widest">Genre / Category</label>
+                                        <input 
+                                            id="enrich-genre"
+                                            type="text" 
+                                            value={editableMetadata.genre} 
+                                            onChange={e => setEditableMetadata({...editableMetadata, genre: e.target.value})}
+                                            className="w-full bg-black/80 border border-green-800 rounded p-2 text-green-300 focus:outline-none focus:border-green-400 transition-colors"
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label htmlFor="enrich-plot" className="block text-green-600 mb-1 font-semibold uppercase text-[10px] tracking-widest">Plot / Content Summary</label>
+                                    <textarea 
+                                        id="enrich-plot"
+                                        value={editableMetadata.plot} 
+                                        onChange={e => setEditableMetadata({...editableMetadata, plot: e.target.value})}
+                                        className="w-full bg-black/80 border border-green-800 rounded p-2 text-green-300 h-24 focus:outline-none focus:border-green-400 transition-colors resize-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label htmlFor="enrich-actors" className="block text-green-600 mb-1 font-semibold uppercase text-[10px] tracking-widest">Identified Actors & People</label>
+                                    <input 
+                                        id="enrich-actors"
+                                        type="text" 
+                                        value={editableMetadata.actors.join(', ')} 
+                                        onChange={e => setEditableMetadata({...editableMetadata, actors: e.target.value.split(',').map((s: string) => s.trim())})}
+                                        className="w-full bg-black/80 border border-green-800 rounded p-2 text-green-300 focus:outline-none focus:border-green-400 transition-colors"
+                                    />
+                                </div>
+                                <div className="flex justify-end gap-3 mt-2">
+                                    <button 
+                                        onClick={() => setEditableMetadata(null)}
+                                        className="text-green-700 hover:text-green-500 text-xs font-bold py-2 px-4 transition-colors"
+                                    >
+                                        Discard suggestions
+                                    </button>
+                                    <button 
+                                        id="btn-apply-enrichment"
+                                        onClick={handleApplyChanges}
+                                        className="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-6 rounded-lg shadow-[0_0_15px_-5px_rgba(34,197,94,0.4)] transition-all hover:scale-[1.02] active:scale-[0.98]"
+                                    >
+                                        Apply Suggested Metadata
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="bg-black/40 p-8 rounded-lg border border-dashed border-green-900 flex flex-col items-center text-center">
+                                <Sparkles className="w-8 h-8 text-green-800 mb-3" />
+                                <p className="text-sm text-green-700 max-w-sm">
+                                    AstraDup AI can analyze this video and check against global databases (TMDb, IMDb) to find accurate titles, actors, and plot summaries.
+                                </p>
+                            </div>
+                        )}
+                    </div>
                 )}
             </div>
           </div>

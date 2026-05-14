@@ -26,6 +26,7 @@ export interface BaseFile {
   path: string;
   sizeMB: number;
   thumbnailUrl: string;
+  createdAt: string;
 }
 
 export interface AnalysisModality<T> {
@@ -39,6 +40,8 @@ export interface VideoFile extends BaseFile {
   duration: string;
   resolution: string;
   codec: string;
+  bitrate: string;
+  frameRate: string;
   videoUrl: string;
   enrichedData: {
       title: string;
