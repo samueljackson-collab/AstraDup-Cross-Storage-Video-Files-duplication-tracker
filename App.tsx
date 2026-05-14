@@ -1,3 +1,5 @@
+// Fix: Add missing React import
+import React from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
@@ -6,14 +8,7 @@ import FileDetail from './pages/FileDetail';
 import Settings from './pages/Settings';
 import ComparisonPage from './pages/ComparisonPage';
 import AnalyzerPage from './pages/AnalyzerPage';
-
-const NotFound: React.FC = () => (
-  <div className="flex flex-col items-center justify-center py-24 text-center">
-    <p className="text-6xl font-extrabold text-green-800">404</p>
-    <h2 className="mt-4 text-2xl font-bold text-green-400">Page Not Found</h2>
-    <p className="mt-2 text-green-600">The page you are looking for does not exist.</p>
-  </div>
-);
+import VideoDetail from './pages/VideoDetail';
 
 const App: React.FC = () => {
   return (
@@ -26,7 +21,7 @@ const App: React.FC = () => {
           <Route path="file/:fileId" element={<FileDetail />} />
           <Route path="settings" element={<Settings />} />
           <Route path="compare/:fileId1/:fileId2" element={<ComparisonPage />} />
-          <Route path="*" element={<NotFound />} />
+          <Route path="video/:fileId" element={<VideoDetail />} />
         </Route>
       </Routes>
     </HashRouter>

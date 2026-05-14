@@ -1,7 +1,7 @@
 
-import type { DashboardStats, ScanResult, AnyFile, DuplicatePair, VideoFile, ImageFile, DocumentFile, FileType, EnrichedVideoMetadata } from '../types';
+import type { DashboardStats, ScanResult, AnyFile, DuplicatePair, VideoFile, ImageFile, DocumentFile, FileType, EnrichedVideoMetadata, ComparisonHistoryItem } from '../types';
 
-const BUNNY_VIDEO_URL = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
+const BUNNY_VIDEO_URL = "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
 
 // --- Mock Data Store ---
 const MOCK_FILES: { [key: string]: AnyFile } = {
@@ -31,12 +31,12 @@ const MOCK_FILES: { [key: string]: AnyFile } = {
     'doc1': {
         id: 'doc1', fileType: 'document', name: 'Project_Proposal_Final.pdf', path: '/nas/work/projects/Project_Proposal_Final.pdf', sizeMB: 2, pageCount: 15, wordCount: 3500, author: 'Jane Doe', thumbnailUrl: 'https://picsum.photos/seed/doc1/400/225',
         content: "Project AstraDup: A proposal to leverage multi-modal AI for cross-storage video de-duplication. This document outlines the project's scope, objectives, and technical approach. The system will analyze video content using perceptual hashes, audio fingerprints, and scene embeddings to identify duplicates regardless of format or resolution changes. The primary goal is to reclaim significant storage space across heterogeneous environments including local drives, NAS, and cloud buckets.",
-        analysis: { textHash: { value: 'a1b2c3d4e5f6...', confidence: 100 }, keywordDensity: { value: { 'deduplication': 15, 'storage-optimization': 9, 'media-management': 7 }, confidence: 90 } }
+        analysis: { textHash: { value: 'a1b2c3d4e5f6...', confidence: 100 }, keywordDensity: { value: { 'synergy': 12, 'blockchain': 8 }, confidence: 90 } }
     },
     'doc2': {
         id: 'doc2', fileType: 'document', name: 'Project_Proposal_v1.2.docx', path: '/local/documents/archive/Project_Proposal_v1.2.docx', sizeMB: 1.8, pageCount: 15, wordCount: 3450, author: 'Jane Doe', thumbnailUrl: 'https://picsum.photos/seed/doc2/400/225',
         content: "Project Proposal: AstraDup. Version 1.2. This proposal details the implementation of an advanced de-duplication system for video files. By employing AI-driven analysis of visual and audio streams, AstraDup aims to identify and flag redundant video files across diverse storage platforms. Key deliverables include a user-friendly interface for reviewing duplicates and a robust backend for processing large media libraries. This initiative promises substantial storage optimization and improved media management.",
-        analysis: { textHash: { value: 'a1b2c3d4e5f6...', confidence: 99 }, keywordDensity: { value: { 'deduplication': 14, 'storage-optimization': 8, 'media-management': 6 }, confidence: 88 } }
+        analysis: { textHash: { value: 'a1b2c3d4e5f6...', confidence: 99 }, keywordDensity: { value: { 'synergy': 11, 'blockchain': 8 }, confidence: 88 } }
     }
 };
 
@@ -109,6 +109,25 @@ export const getDuplicatesForFile = (fileId: string): Promise<AnyFile[]> => {
             });
             resolve(duplicates);
         }, 300);
+    });
+};
+
+export const getComparisonHistory = (fileId: string): Promise<ComparisonHistoryItem[]> => {
+    return new Promise(resolve => {
+        setTimeout(() => {
+            const history: ComparisonHistoryItem[] = MOCK_DUPLICATE_PAIRS
+                .filter(p => p.file1.id === fileId || p.file2.id === fileId)
+                .map((p, index) => {
+                    const otherFile = p.file1.id === fileId ? p.file2 : p.file1;
+                    return {
+                        id: `comp-hist-${index}`,
+                        otherFile: { id: otherFile.id, name: otherFile.name },
+                        date: new Date(Date.now() - index * 24 * 60 * 60 * 1000).toISOString(), // Simulate past dates
+                        similarityScore: p.similarityScore,
+                    };
+                });
+            resolve(history);
+        }, 400);
     });
 };
 

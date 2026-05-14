@@ -1,17 +1,18 @@
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { getFileDetails, getDuplicatesForFile } from '../services/api';
+import { getFileDetails, getDuplicatesForFile, getComparisonHistory } from '../services/api';
 import { summarizeText } from '../services/gemini';
-import type { AnyFile, VideoFile, ImageFile, DocumentFile } from '../types';
+import type { AnyFile, VideoFile, ImageFile, DocumentFile, ComparisonHistoryItem } from '../types';
 import Spinner from '../components/Spinner';
 import {
-    ArrowLeftIcon, XCircleIcon, ChevronDownIcon, SparklesIcon,
-    ExternalLinkIcon, PlayIcon, PauseIcon, VolumeHighIcon, VolumeMutedIcon, FullscreenIcon, FullscreenExitIcon
+    ArrowLeftIcon, XCircleIcon, SparklesIcon,
+    ExternalLinkIcon, CheckCircleIcon, AlertCircleIcon
 } from '../components/Icons';
 import Button from '../components/Button';
 import { FilmIcon, PhotoIcon, DocumentTextIcon } from '../components/FileTypeIcons';
 import { DetailItem, AnalysisItem } from '../components/DetailViews';
+import CustomVideoPlayer from '../components/CustomVideoPlayer';
 
 // --- HELPER COMPONENTS (CONSOLIDATED) ---
 const DuplicateItem: React.FC<{ currentFileId: string; duplicate: AnyFile; onMarkAsNotDuplicate: (duplicateId: string) => void; }> = ({ currentFileId, duplicate, onMarkAsNotDuplicate }) => {
@@ -28,7 +29,7 @@ const DuplicateItem: React.FC<{ currentFileId: string; duplicate: AnyFile; onMar
                 <div className="ml-4 min-w-0">
                     <div className="flex items-center">
                         <FileTypeIcon className="h-4 w-4 text-green-600 mr-2 flex-shrink-0" />
-                        <p className="font-bold text-green-400 text-base truncate">{duplicate.name}</p>
+                        <Link to={`/compare/${currentFileId}/${duplicate.id}`} className="font-bold text-green-400 text-base truncate hover:underline">{duplicate.name}</Link>
                     </div>
                     <p className="text-sm text-green-600 font-mono truncate">{duplicate.path}</p>
                 </div>
@@ -62,325 +63,6 @@ const TabButton: React.FC<{ active: boolean; onClick: () => void; children: Reac
     </button>
 );
 
-const AccordionItem: React.FC<{ title: string; children: React.ReactNode; isOpen: boolean; onToggle: () => void; }> = ({ title, children, isOpen, onToggle }) => (
-    <div className="border-b border-green-800 last:border-b-0">
-        <h3 className="text-lg font-bold text-green-400">
-            <button
-                type="button"
-                className="flex items-center justify-between w-full p-4 text-left"
-                onClick={onToggle}
-                aria-expanded={isOpen}
-            >
-                <span>{title}</span>
-                <ChevronDownIcon className={`w-5 h-5 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
-            </button>
-        </h3>
-        <div 
-            className={`grid transition-all duration-300 ease-in-out ${isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
-        >
-            <div className="overflow-hidden">
-                <div className="px-4 pb-4">
-                    {children}
-                </div>
-            </div>
-        </div>
-    </div>
-);
-
-
-// --- VIDEO DETAIL COMPONENTS ---
-
-const CustomVideoPlayer: React.FC<{file: VideoFile}> = ({ file }) => {
-    const containerRef = useRef<HTMLDivElement>(null);
-    const videoRef = useRef<HTMLVideoElement>(null);
-    const progressRef = useRef<HTMLInputElement>(null);
-    const [isPlaying, setIsPlaying] = useState(false);
-    const [volume, setVolume] = useState(1);
-    const [isMuted, setIsMuted] = useState(false);
-    const [duration, setDuration] = useState(0);
-    const [currentTime, setCurrentTime] = useState(0);
-    const [isFullScreen, setIsFullScreen] = useState(false);
-
-    const formatTime = (timeInSeconds: number) => {
-        if (isNaN(timeInSeconds)) return '0:00';
-        const minutes = Math.floor(timeInSeconds / 60);
-        const seconds = Math.floor(timeInSeconds % 60);
-        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-    };
-
-    const togglePlayPause = useCallback(() => {
-        if (videoRef.current?.paused) {
-            videoRef.current?.play();
-        } else {
-            videoRef.current?.pause();
-        }
-    }, []);
-
-    const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const newVolume = Number(e.target.value);
-        if(videoRef.current) {
-            videoRef.current.volume = newVolume;
-            videoRef.current.muted = newVolume === 0;
-        }
-    };
-    
-    const toggleMute = useCallback(() => {
-        if(videoRef.current) {
-            videoRef.current.muted = !videoRef.current.muted;
-        }
-    }, []);
-
-    const toggleFullScreen = useCallback(() => {
-        if (!containerRef.current) return;
-        if (!document.fullscreenElement) {
-            containerRef.current.requestFullscreen();
-        } else {
-            document.exitFullscreen();
-        }
-    }, []);
-    
-    useEffect(() => {
-        const video = videoRef.current;
-        if (!video) return;
-        
-        const handleTimeUpdate = () => setCurrentTime(video.currentTime);
-        const handleLoadedMetadata = () => setDuration(video.duration);
-        const handlePlay = () => setIsPlaying(true);
-        const handlePause = () => setIsPlaying(false);
-        const onFullscreenChange = () => setIsFullScreen(!!document.fullscreenElement);
-        const handleVolumeStateChange = () => {
-            setVolume(video.volume);
-            setIsMuted(video.muted);
-        };
-
-        video.addEventListener('timeupdate', handleTimeUpdate);
-        video.addEventListener('loadedmetadata', handleLoadedMetadata);
-        video.addEventListener('play', handlePlay);
-        video.addEventListener('pause', handlePause);
-        video.addEventListener('ended', handlePause);
-        video.addEventListener('volumechange', handleVolumeStateChange);
-        document.addEventListener('fullscreenchange', onFullscreenChange);
-
-        handleVolumeStateChange();
-
-        return () => {
-            video.removeEventListener('timeupdate', handleTimeUpdate);
-            video.removeEventListener('loadedmetadata', handleLoadedMetadata);
-            video.removeEventListener('play', handlePlay);
-            video.removeEventListener('pause', handlePause);
-            video.removeEventListener('ended', handlePause);
-            video.removeEventListener('volumechange', handleVolumeStateChange);
-            document.removeEventListener('fullscreenchange', onFullscreenChange);
-        };
-    }, []);
-
-    useEffect(() => {
-        const playerContainer = containerRef.current;
-        if (!playerContainer) return;
-
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.target !== playerContainer) return;
-
-            switch (e.code) {
-                case 'Space':
-                    e.preventDefault();
-                    togglePlayPause();
-                    break;
-                case 'KeyM':
-                    toggleMute();
-                    break;
-                case 'KeyF':
-                    toggleFullScreen();
-                    break;
-                case 'ArrowRight':
-                    if (videoRef.current) videoRef.current.currentTime = Math.min(videoRef.current.duration, videoRef.current.currentTime + 5);
-                    break;
-                case 'ArrowLeft':
-                    if (videoRef.current) videoRef.current.currentTime = Math.max(0, videoRef.current.currentTime - 5);
-                    break;
-            }
-        };
-
-        playerContainer.addEventListener('keydown', handleKeyDown);
-        return () => {
-            playerContainer.removeEventListener('keydown', handleKeyDown);
-        };
-    }, [togglePlayPause, toggleMute, toggleFullScreen]);
-
-    const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
-    
-    return (
-        <div ref={containerRef} className="relative aspect-video bg-black rounded-lg group overflow-hidden outline-none focus:ring-2 focus:ring-green-500" tabIndex={0}>
-            <video 
-                ref={videoRef}
-                onClick={togglePlayPause}
-                playsInline
-                preload="metadata"
-                poster={file.thumbnailUrl} 
-                src={file.videoUrl} 
-                className="w-full h-full object-contain rounded-lg"
-            >
-                Your browser does not support the video tag.
-            </video>
-            
-            <div className="absolute inset-0 flex items-center justify-center bg-black/20 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <button onClick={togglePlayPause} className="p-4 rounded-full bg-black/50 text-white hover:bg-green-500/80 transition-colors pointer-events-auto">
-                    {isPlaying ? <PauseIcon className="w-10 h-10" /> : <PlayIcon className="w-10 h-10" />}
-                </button>
-            </div>
-            
-            <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <input
-                    type="range"
-                    ref={progressRef}
-                    min="0"
-                    max={duration || 0}
-                    value={currentTime}
-                    onChange={(e) => { if (videoRef.current) videoRef.current.currentTime = Number(e.target.value); }}
-                    className="w-full h-1 bg-green-900/50 rounded-lg appearance-none cursor-pointer range-sm"
-                    style={{ backgroundSize: `${progressPercent}% 100%` }}
-                />
-                <div className="flex items-center justify-between mt-2 text-white">
-                    <div className="flex items-center space-x-3">
-                        <button onClick={togglePlayPause} className="text-white hover:text-green-400">
-                            {isPlaying ? <PauseIcon className="w-6 h-6" /> : <PlayIcon className="w-6 h-6" />}
-                        </button>
-                        <div className="relative group/volume flex items-center">
-                           <button onClick={toggleMute} className="text-white hover:text-green-400">
-                             {(isMuted || volume === 0) ? <VolumeMutedIcon className="w-6 h-6" /> : <VolumeHighIcon className="w-6 h-6" />}
-                           </button>
-                           <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 p-2 bg-black/60 rounded-md opacity-0 group-hover/volume:opacity-100 transition-opacity pointer-events-none group-hover/volume:pointer-events-auto">
-                               <input 
-                                 type="range" 
-                                 min="0" max="1" step="0.05" 
-                                 value={isMuted ? 0 : volume}
-                                 onChange={handleVolumeChange} 
-                                 className="h-20 w-1.5 appearance-none bg-green-900/50 rounded-lg cursor-pointer"
-                                 style={{ writingMode: 'vertical-lr', direction: 'rtl' }}
-                               />
-                           </div>
-                        </div>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                        <span className="text-sm font-mono">{formatTime(currentTime)} / {formatTime(duration)}</span>
-                        <button onClick={toggleFullScreen} className="text-white hover:text-green-400">
-                           {isFullScreen ? <FullscreenExitIcon className="w-5 h-5" /> : <FullscreenIcon className="w-5 h-5" />}
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-interface VideoDetailProps {
-    file: VideoFile;
-    initialDuplicates: AnyFile[];
-}
-
-const VideoDetailContent: React.FC<VideoDetailProps> = ({ file, initialDuplicates }) => {
-    const navigate = useNavigate();
-    const [duplicates, setDuplicates] = useState<AnyFile[]>(initialDuplicates);
-    const [activeTab, setActiveTab] = useState<string>(initialDuplicates.length > 0 ? 'duplicates' : 'properties');
-
-    const handleMarkAsNotDuplicate = (duplicateId: string) => {
-        setDuplicates(currentDuplicates =>
-          currentDuplicates.filter(dup => dup.id !== duplicateId)
-        );
-    };
-
-    const renderPropertiesContent = () => (
-        <div className="p-5">
-            <dl className="grid grid-cols-2 gap-x-4 gap-y-6">
-                <DetailItem label="Size" value={`${file.sizeMB} MB`} />
-                <DetailItem label="Duration" value={file.duration} mono />
-                <DetailItem label="Resolution" value={file.resolution} mono />
-                <DetailItem label="Codec" value={file.codec} />
-            </dl>
-        </div>
-    );
-
-    const renderEnrichedContent = () => (
-        <div className="p-5">
-            <dl className="grid grid-cols-1 gap-y-4">
-                <DetailItem label="Suggested Title" value={file.enrichedData.title} />
-                <div>
-                    <dt className="text-base font-semibold text-green-600">Plot Summary</dt>
-                    <dd className="mt-1 text-base text-green-400">{file.enrichedData.plot}</dd>
-                </div>
-                <DetailItem label="Genre" value={file.enrichedData.genre} />
-            </dl>
-        </div>
-    );
-    
-    const renderAnalysisContent = () => (
-        <div className="p-5 space-y-6">
-            <AnalysisItem label="Perceptual Hash" value={file.analysis.pHash.value} confidence={file.analysis.pHash.confidence} mono />
-            <AnalysisItem label="Difference Hash" value={file.analysis.dHash.value} confidence={file.analysis.dHash.confidence} mono />
-            <AnalysisItem label="Audio Fingerprint" value={file.analysis.audioFingerprint.value} confidence={file.analysis.audioFingerprint.confidence} mono />
-            <AnalysisItem label="Scene Embeddings" value={null} confidence={file.analysis.sceneEmbeddings.confidence} />
-            <AnalysisItem label="Face Clusters" value={`${file.analysis.faceClusters.value} clusters`} confidence={file.analysis.faceClusters.confidence} />
-        </div>
-    );
-
-    const renderDuplicatesContent = () => (
-        <div className="p-5 space-y-4">
-            {duplicates.length > 0 && (
-                <div className="mb-4">
-                    <Link to={`/compare/${file.id}/${duplicates[0].id}`}>
-                        <Button className="w-full">Compare with First Duplicate</Button>
-                    </Link>
-                </div>
-            )}
-            {duplicates.length > 0 ? (
-                duplicates.map(dup => <DuplicateItem key={dup.id} currentFileId={file.id} duplicate={dup} onMarkAsNotDuplicate={handleMarkAsNotDuplicate} />)
-            ) : (
-                <div className="text-center text-green-600 py-8"><p>No other duplicates found.</p></div>
-            )}
-        </div>
-    );
-
-    return (
-        <div>
-          <Button variant="secondary" onClick={() => navigate(-1)} className="mb-6">
-            <ArrowLeftIcon className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-          <div className="lg:flex lg:space-x-8">
-            <div className="lg:w-2/3">
-              <CustomVideoPlayer file={file} />
-              <div className="flex items-center">
-                 <h1 className="text-3xl font-extrabold text-green-400 mt-4">{file.name}</h1>
-                 <a href={`https://www.imdb.com/find?q=${encodeURIComponent(file.name.replace(/\.[^/.]+$/, ""))}`} target="_blank" rel="noopener noreferrer" title="Search on IMDb" className="mt-4 ml-3 text-green-700 hover:text-green-400">
-                     <ExternalLinkIcon className="h-5 w-5" />
-                 </a>
-              </div>
-              <p className="text-base text-green-600 font-mono break-all">{file.path}</p>
-            </div>
-            <div className="lg:w-1/3 mt-6 lg:mt-0">
-               <div className="bg-black border border-green-800 rounded-lg overflow-hidden">
-                    <div className="border-b border-green-800 px-4">
-                        <nav className="-mb-px flex space-x-2 overflow-x-auto" aria-label="Tabs">
-                            <TabButton active={activeTab === 'properties'} onClick={() => setActiveTab('properties')}>Properties</TabButton>
-                            <TabButton active={activeTab === 'enriched'} onClick={() => setActiveTab('enriched')}>Enriched</TabButton>
-                            <TabButton active={activeTab === 'analysis'} onClick={() => setActiveTab('analysis')}>Analysis</TabButton>
-                            <TabButton active={activeTab === 'duplicates'} onClick={() => setActiveTab('duplicates')} badge={duplicates.length}>Duplicates</TabButton>
-                        </nav>
-                    </div>
-                    <div>
-                        {activeTab === 'properties' && renderPropertiesContent()}
-                        {activeTab === 'enriched' && renderEnrichedContent()}
-                        {activeTab === 'analysis' && renderAnalysisContent()}
-                        {activeTab === 'duplicates' && renderDuplicatesContent()}
-                    </div>
-               </div>
-            </div>
-          </div>
-        </div>
-      );
-};
-
-
 // --- MAIN PAGE COMPONENT ---
 
 const FileDetail: React.FC = () => {
@@ -389,33 +71,26 @@ const FileDetail: React.FC = () => {
   const [file, setFile] = useState<AnyFile | null>(null);
   const [duplicates, setDuplicates] = useState<AnyFile[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<string>('details');
-  const [openSections, setOpenSections] = useState({
-      properties: true,
-      exif: true,
-      analysis: true,
-      aiSummary: false,
-  });
+  const [activeTab, setActiveTab] = useState<string>('properties');
+  const [comparisonHistory, setComparisonHistory] = useState<ComparisonHistoryItem[]>([]);
   const [summary, setSummary] = useState<string | null>(null);
   const [isSummarizing, setIsSummarizing] = useState(false);
-
-  const toggleSection = (key: keyof typeof openSections) => {
-      setOpenSections(prev => ({ ...prev, [key]: !prev[key] }));
-  };
 
   useEffect(() => {
     if (fileId) {
       setLoading(true);
       Promise.all([
         getFileDetails(fileId),
-        getDuplicatesForFile(fileId)
-      ]).then(([fileData, duplicatesData]) => {
+        getDuplicatesForFile(fileId),
+        getComparisonHistory(fileId)
+      ]).then(([fileData, duplicatesData, historyData]) => {
+        setComparisonHistory(historyData);
         setFile(fileData || null);
         setDuplicates(duplicatesData);
         if (duplicatesData.length > 0) {
             setActiveTab('duplicates');
         } else {
-            setActiveTab('details');
+            setActiveTab('properties');
         }
         setLoading(false);
       }).catch(err => {
@@ -435,9 +110,6 @@ const FileDetail: React.FC = () => {
     if (file?.fileType !== 'document' || !file.content) return;
     setIsSummarizing(true);
     setSummary(null);
-    if (!openSections.aiSummary) {
-        toggleSection('aiSummary');
-    }
     try {
         const response = await summarizeText(file.content);
         setSummary(response.text);
@@ -449,70 +121,114 @@ const FileDetail: React.FC = () => {
     }
   };
 
-  if (loading) return <div className="flex justify-center items-center h-full"><Spinner /></div>;
-  if (!file) return <div className="text-center text-green-600">File not found.</div>;
-
-  // Delegate to VideoDetail component for videos
-  if (file.fileType === 'video') {
-    return <VideoDetailContent file={file as VideoFile} initialDuplicates={duplicates} />;
-  }
-
-  const renderDetailsContent = () => {
-    const analysisItems = () => {
-        switch(file.fileType) {
-            case 'image':
-                const i = file as ImageFile;
-                return <>
-                    <AnalysisItem label="Perceptual Hash" value={i.analysis.pHash.value} confidence={i.analysis.pHash.confidence} mono />
-                    <AnalysisItem label="Difference Hash" value={i.analysis.dHash.value} confidence={i.analysis.dHash.confidence} mono />
-                    <AnalysisItem label="Object Tags" value={i.analysis.objectTags.value.join(', ')} confidence={i.analysis.objectTags.confidence} />
-                </>;
-            case 'document':
-                const d = file as DocumentFile;
-                return <>
-                    <AnalysisItem label="Text Hash" value={d.analysis.textHash.value} confidence={d.analysis.textHash.confidence} mono />
-                    <AnalysisItem label="Keyword Density" value={Object.entries(d.analysis.keywordDensity.value).map(([k,v]) => `${k} (${v})`).join(', ')} confidence={d.analysis.keywordDensity.confidence} />
-                </>;
-            default: return null;
-        }
-    }
-    
+  const renderPropertiesContent = () => {
+    if (!file) return null;
     return (
-        <div className="bg-green-900/10">
-            <AccordionItem title="File Properties" isOpen={openSections.properties} onToggle={() => toggleSection('properties')}>
-                <dl className="grid grid-cols-2 gap-x-4 gap-y-6">
-                    <DetailItem label="Size" value={`${file.sizeMB} MB`} />
-                    {file.fileType === 'image' && <DetailItem label="Resolution" value={(file as ImageFile).resolution} mono />}
-                    {file.fileType === 'document' && <>
-                        <DetailItem label="Page Count" value={(file as DocumentFile).pageCount} />
-                        <DetailItem label="Word Count" value={(file as DocumentFile).wordCount} />
-                        <DetailItem label="Author" value={(file as DocumentFile).author} />
-                    </>}
-                </dl>
-            </AccordionItem>
-            {file.fileType === 'image' && (
-                <AccordionItem title="EXIF Data" isOpen={openSections.exif} onToggle={() => toggleSection('exif')}>
+        <div className="p-5">
+            <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-6">
+                <DetailItem label="Size" value={`${file.sizeMB} MB`} />
+                <DetailItem label="Path" value={file.path} mono className="col-span-2" />
+                {file.fileType === 'video' && <>
+                    <DetailItem label="Duration" value={(file as VideoFile).duration} mono />
+                    <DetailItem label="Resolution" value={(file as VideoFile).resolution} mono />
+                    <DetailItem label="Codec" value={(file as VideoFile).codec} />
+                </>}
+                 {file.fileType === 'image' && <DetailItem label="Resolution" value={(file as ImageFile).resolution} mono />}
+                 {file.fileType === 'document' && <>
+                    <DetailItem label="Page Count" value={(file as DocumentFile).pageCount} />
+                    <DetailItem label="Word Count" value={(file as DocumentFile).wordCount} />
+                    <DetailItem label="Author" value={(file as DocumentFile).author} />
+                </>}
+            </dl>
+            {file.fileType === 'video' && (file as VideoFile).enrichedData &&
+                <>
+                    <hr className="border-green-800 my-4" />
+                    <h4 className="text-lg font-bold text-green-500 mb-3">Enriched Metadata</h4>
+                    <dl className="grid grid-cols-1 gap-y-4">
+                        <DetailItem label="Suggested Title" value={(file as VideoFile).enrichedData.title} />
+                         <div>
+                            <dt className="text-base font-semibold text-green-600">Plot Summary</dt>
+                            <dd className="mt-1 text-base text-green-400">{(file as VideoFile).enrichedData.plot}</dd>
+                        </div>
+                        <DetailItem label="Genre" value={(file as VideoFile).enrichedData.genre} />
+                    </dl>
+                </>
+            }
+             {file.fileType === 'image' && (file as ImageFile).exif &&
+                <>
+                    <hr className="border-green-800 my-4" />
+                    <h4 className="text-lg font-bold text-green-500 mb-3">EXIF Data</h4>
                     <dl className="grid grid-cols-2 gap-x-4 gap-y-6">
-                        <DetailItem label="Camera" value={(file as ImageFile).exif.cameraModel} />
+                         <DetailItem label="Camera" value={(file as ImageFile).exif.cameraModel} />
                         <DetailItem label="Date Taken" value={new Date((file as ImageFile).exif.dateTaken).toLocaleString()} />
                         <DetailItem label="ISO" value={(file as ImageFile).exif.iso} />
                     </dl>
-                </AccordionItem>
-            )}
-            <AccordionItem title="AI Analysis" isOpen={openSections.analysis} onToggle={() => toggleSection('analysis')}>
-                <div className="space-y-6">{analysisItems()}</div>
-            </AccordionItem>
-            {file.fileType === 'document' && (
-                <AccordionItem title="AI Summary" isOpen={openSections.aiSummary} onToggle={() => toggleSection('aiSummary')}>
-                   <div className="space-y-3">
-                        <Button onClick={handleSummarize} disabled={isSummarizing}>
-                            {isSummarizing ? <Spinner /> : <SparklesIcon className="h-4 w-4 mr-2" />}
-                            {isSummarizing ? 'Analyzing...' : 'Summarize with AI'}
-                        </Button>
-                        {isSummarizing && <p className="text-sm text-green-600">Generating summary, please wait...</p>}
-                        {summary && <p className="text-base text-green-400">{summary}</p>}
-                   </div>
-                </AccordionItem>
+                </>
+            }
+        </div>
+    );
+  };
+
+  const renderAnalysisContent = () => {
+    if (!file) return null;
+    return (
+        <div className="p-5 space-y-6">
+            {file.fileType === 'video' && <>
+                <AnalysisItem label="Perceptual Hash" value={(file as VideoFile).analysis.pHash.value} confidence={(file as VideoFile).analysis.pHash.confidence} mono />
+                <AnalysisItem label="Difference Hash" value={(file as VideoFile).analysis.dHash.value} confidence={(file as VideoFile).analysis.dHash.confidence} mono />
+                <AnalysisItem label="Audio Fingerprint" value={(file as VideoFile).analysis.audioFingerprint.value} confidence={(file as VideoFile).analysis.audioFingerprint.confidence} mono />
+                <AnalysisItem label="Scene Embeddings" value={null} confidence={(file as VideoFile).analysis.sceneEmbeddings.confidence} />
+                <AnalysisItem label="Face Clusters" value={`${(file as VideoFile).analysis.faceClusters.value} clusters`} confidence={(file as VideoFile).analysis.faceClusters.confidence} />
+            </>}
+             {file.fileType === 'image' && <>
+                <AnalysisItem label="Perceptual Hash" value={(file as ImageFile).analysis.pHash.value} confidence={(file as ImageFile).analysis.pHash.confidence} mono />
+                <AnalysisItem label="Difference Hash" value={(file as ImageFile).analysis.dHash.value} confidence={(file as ImageFile).analysis.dHash.confidence} mono />
+                <AnalysisItem label="Object Tags" value={(file as ImageFile).analysis.objectTags.value.join(', ')} confidence={(file as ImageFile).analysis.objectTags.confidence} />
+            </>}
+            {file.fileType === 'document' && <>
+                <AnalysisItem label="Text Hash" value={(file as DocumentFile).analysis.textHash.value} confidence={(file as DocumentFile).analysis.textHash.confidence} mono />
+                <AnalysisItem label="Keyword Density" value={Object.entries((file as DocumentFile).analysis.keywordDensity.value).map(([k,v]) => `${k} (${v})`).join(', ')} confidence={(file as DocumentFile).analysis.keywordDensity.confidence} />
+                 <hr className="border-green-800" />
+                 <div className="space-y-3">
+                    <h4 className="text-lg font-bold text-green-500">AI Summary</h4>
+                    <Button onClick={handleSummarize} disabled={isSummarizing}>
+                        {isSummarizing ? <Spinner /> : <SparklesIcon className="h-4 w-4 mr-2" />}
+                        {isSummarizing ? 'Analyzing...' : 'Summarize with AI'}
+                    </Button>
+                    {isSummarizing && <p className="text-sm text-green-600">Generating summary, please wait...</p>}
+                    {summary && <p className="text-base text-green-400">{summary}</p>}
+               </div>
+            </>}
+        </div>
+    );
+  };
+
+  const renderHistoryContent = () => {
+    return (
+        <div className="p-5 space-y-3">
+            {comparisonHistory.length > 0 ? (
+                comparisonHistory.map(comp => (
+                    <div key={comp.id} className="flex items-center justify-between bg-gray-900/50 p-3 rounded-md">
+                        <div>
+                            <div className="flex items-center">
+                                {comp.similarityScore > 95 ? 
+                                    <CheckCircleIcon className="h-5 w-5 text-green-500 mr-3" /> : 
+                                    <AlertCircleIcon className="h-5 w-5 text-yellow-500 mr-3" />
+                                }
+                                <div>
+                                    <p className="font-semibold text-green-400">Compared with: <span className="font-normal">{comp.otherFile.name}</span></p>
+                                    <p className="text-sm text-green-600">{new Date(comp.date).toLocaleString()} - <span className="font-bold">{comp.similarityScore}% match</span></p>
+                                </div>
+                            </div>
+                            
+                        </div>
+                        <Link to={`/compare/${fileId}/${comp.otherFile.id}`}>
+                            <Button variant="secondary" className="text-xs">Revisit</Button>
+                        </Link>
+                    </div>
+                ))
+            ) : (
+                <div className="text-center text-green-600 py-8"><p>No comparison history for this file.</p></div>
             )}
         </div>
     );
@@ -521,23 +237,25 @@ const FileDetail: React.FC = () => {
   const renderDuplicatesContent = () => {
     return (
         <div className="p-5 space-y-4">
-            {(file?.fileType === 'image' && duplicates.length > 0) && (
+            {duplicates.length > 0 && (
                 <div className="mb-4">
-                    <Link to={`/compare/${file.id}/${duplicates[0].id}`}>
-                        <Button className="w-full">Compare with First Duplicate</Button>
+                    <Link to={`/compare/${fileId}/${duplicates[0].id}`}>
+                        <Button className="w-full">Compare with Duplicates</Button>
                     </Link>
                 </div>
             )}
             {duplicates.length > 0 ? (
-                duplicates.map(dup => <DuplicateItem key={dup.id} currentFileId={file!.id} duplicate={dup} onMarkAsNotDuplicate={handleMarkAsNotDuplicate} />)
+                duplicates.map(dup => <DuplicateItem key={dup.id} currentFileId={fileId!} duplicate={dup} onMarkAsNotDuplicate={handleMarkAsNotDuplicate} />)
             ) : (
-                <div className="text-center text-green-600 py-8"><p>No other duplicates found.</p></div>
+                <div className="text-center text-green-600 py-8"><p>No duplicates found for this file.</p></div>
             )}
         </div>
     );
-  }
+  };
 
-  // Render logic for Image and Document types
+  if (loading) return <div className="flex justify-center items-center h-full"><Spinner /></div>;
+  if (!file) return <div className="text-center text-green-600">File not found.</div>;
+
   return (
     <div>
       <Button variant="secondary" onClick={() => navigate(-1)} className="mb-6">
@@ -547,25 +265,36 @@ const FileDetail: React.FC = () => {
       <div className="lg:flex lg:space-x-8">
         <div className="lg:w-2/3">
            <div className="aspect-video bg-black rounded-lg flex items-center justify-center">
-             {file.fileType === 'document' ? 
-                <DocumentTextIcon className="h-32 w-32 text-green-900" /> :
-                <img src={file.thumbnailUrl} alt={file.name} className="w-full h-full object-contain" />
+             {file.fileType === 'video' ? <CustomVideoPlayer file={file as VideoFile} /> :
+              file.fileType === 'document' ? <DocumentTextIcon className="h-32 w-32 text-green-900" /> :
+              <img src={file.thumbnailUrl} alt={file.name} className="w-full h-full object-contain rounded-lg" />
              }
            </div>
-           <h1 className="text-3xl font-extrabold text-green-400 mt-4">{file.name}</h1>
+           <div className="flex items-center">
+              <h1 className="text-3xl font-extrabold text-green-400 mt-4">{file.name}</h1>
+              {file.fileType === 'video' &&
+                <a href={`https://www.imdb.com/find?q=${encodeURIComponent(file.name.replace(/\.[^/.]+$/, ""))}`} target="_blank" rel="noopener noreferrer" title="Search on IMDb" className="mt-4 ml-3 text-green-700 hover:text-green-400">
+                    <ExternalLinkIcon className="h-5 w-5" />
+                </a>
+              }
+           </div>
            <p className="text-base text-green-600 font-mono break-all">{file.path}</p>
         </div>
         <div className="lg:w-1/3 mt-6 lg:mt-0">
            <div className="bg-black border border-green-800 rounded-lg overflow-hidden">
                 <div className="border-b border-green-800 px-4">
-                    <nav className="-mb-px flex space-x-2" aria-label="Tabs">
-                        <TabButton active={activeTab === 'details'} onClick={() => setActiveTab('details')}>Details</TabButton>
+                    <nav className="-mb-px flex space-x-2 overflow-x-auto" aria-label="Tabs">
+                        <TabButton active={activeTab === 'properties'} onClick={() => setActiveTab('properties')}>Properties</TabButton>
+                        <TabButton active={activeTab === 'analysis'} onClick={() => setActiveTab('analysis')}>AI Analysis</TabButton>
                         <TabButton active={activeTab === 'duplicates'} onClick={() => setActiveTab('duplicates')} badge={duplicates.length}>Duplicates</TabButton>
+                        <TabButton active={activeTab === 'history'} onClick={() => setActiveTab('history')} badge={comparisonHistory.length}>History</TabButton>
                     </nav>
                 </div>
                 <div>
-                    {activeTab === 'details' && renderDetailsContent()}
+                    {activeTab === 'properties' && renderPropertiesContent()}
+                    {activeTab === 'analysis' && renderAnalysisContent()}
                     {activeTab === 'duplicates' && renderDuplicatesContent()}
+                    {activeTab === 'history' && renderHistoryContent()}
                 </div>
            </div>
         </div>

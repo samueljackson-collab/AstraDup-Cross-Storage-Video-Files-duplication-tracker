@@ -24,6 +24,11 @@ const StorageSelector: React.FC<StorageSelectorProps> = ({ sources, cloudSourceT
         const isConnected = connected.has(source.id);
         const isConnecting = connectingId === source.id;
 
+        const handleDisconnect = (e: React.MouseEvent) => {
+            e.stopPropagation(); // Prevent card click from firing
+            onToggle(source.id);
+        };
+
         const handleClick = () => {
             if (isCloud && !isConnected) {
                 // Cloud sources must be connected first, do nothing on main card click
@@ -53,18 +58,25 @@ const StorageSelector: React.FC<StorageSelectorProps> = ({ sources, cloudSourceT
             </div>
 
             {isCloud && !isConnected && (
-                <div className="w-full">
-                    <Button
-                        variant="secondary"
-                        className="w-full text-xs"
-                        onClick={() => onConnect(source.id)}
-                        disabled={isConnecting}
-                    >
-                        {isConnecting ? <Spinner /> : <LinkIcon className="h-4 w-4 mr-2" />}
-                        {isConnecting ? 'Connecting...' : 'Connect'}
-                    </Button>
-                    <p className="text-green-800 text-xs text-center mt-1">Demo: simulated connection</p>
-                </div>
+                <Button
+                    variant="secondary"
+                    className="w-full text-xs"
+                    onClick={() => onConnect(source.id)}
+                    disabled={isConnecting}
+                >
+                    {isConnecting ? <Spinner /> : <LinkIcon className="h-4 w-4 mr-2" />}
+                    {isConnecting ? 'Connecting...' : 'Connect'}
+                </Button>
+            )}
+
+            {isSelected && (isCloud ? isConnected : true) && (
+                 <Button
+                    variant="danger"
+                    className="w-full text-xs mt-2"
+                    onClick={handleDisconnect}
+                >
+                    Deselect
+                </Button>
             )}
           </div>
         );

@@ -117,6 +117,13 @@ export interface EnrichedVideoMetadata {
     };
 }
 
+export interface ComparisonHistoryItem {
+  id: string;
+  otherFile: Pick<AnyFile, 'id' | 'name'>;
+  date: string;
+  similarityScore: number;
+}
+
 export interface GroundingChunk {
     web?: { uri?: string, title?: string };
 }

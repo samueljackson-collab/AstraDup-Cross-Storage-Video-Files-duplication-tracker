@@ -1,4 +1,3 @@
-
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 
 interface Props {
@@ -10,8 +9,9 @@ interface State {
 }
 
 class ErrorBoundary extends Component<Props, State> {
+  // Fix: Use class property for state initialization to resolve type errors where component properties like 'state' and 'props' were not being found.
   public state: State = {
-    hasError: false
+    hasError: false,
   };
 
   public static getDerivedStateFromError(_: Error): State {

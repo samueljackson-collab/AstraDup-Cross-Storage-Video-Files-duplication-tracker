@@ -36,6 +36,10 @@ const Dashboard: React.FC = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | FileType>('all');
+  const [scheduledScans, setScheduledScans] = useState([
+    { id: 'sched-1', type: 'video', sources: ['Local Drive', 'NAS'], time: 'Tomorrow at 3:00 AM' },
+    { id: 'sched-2', type: 'image', sources: ['Google Drive'], time: 'In 3 days' },
+  ]);
 
   useEffect(() => {
     setLoading(true);
@@ -44,7 +48,7 @@ const Dashboard: React.FC = () => {
         setStats(data);
         setLoading(false);
       })
-      .catch(err => { console.error(err); setLoading(false); });
+      .catch(console.error);
   }, []);
   
   const filteredStats = () => {
@@ -95,8 +99,8 @@ const Dashboard: React.FC = () => {
         {filteredStats()?.map(s => <StatCard key={s.title} title={s.title} value={s.value} unit={s.unit} description={s.desc} />)}
       </div>
 
-      <div className="mt-10 grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="bg-black border border-green-800 rounded-lg p-6">
+      <div className="mt-10 grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-1 bg-black border border-green-800 rounded-lg p-6">
             <h2 className="text-xl font-bold text-green-400 mb-4">Welcome to AstraDup</h2>
             <p className="text-green-600 text-base">
               AstraDup helps you find and manage duplicate videos, images, and documents across all your storage locations. 
@@ -106,13 +110,28 @@ const Dashboard: React.FC = () => {
               To get started, click the "Start New Scan" button to select a file type and your storage sources to begin the analysis.
             </p>
           </div>
-           <div className="bg-black border border-green-800 rounded-lg p-6">
+          <div className="bg-black border border-green-800 rounded-lg p-6">
             <h2 className="text-xl font-bold text-green-400 mb-4">Recent Activity</h2>
             <div className="space-y-2">
                 <ActivityItem fileType="video" fileName="vacation_beach.mp4" action="was deleted." time="2h ago" />
                 <ActivityItem fileType="image" fileName="sunset_coast.jpg" action="metadata was enriched." time="5h ago" />
                 <ActivityItem fileType="video" fileName="project_alpha.mov" action="was kept." time="1d ago" />
                 <ActivityItem fileType="document" fileName="Proposal_v2.pdf" action="was marked as not a duplicate." time="2d ago" />
+                <ActivityItem fileType="video" fileName="All Videos" action="scan scheduled." time="3d ago" />
+            </div>
+          </div>
+          <div className="bg-black border border-green-800 rounded-lg p-6">
+            <h2 className="text-xl font-bold text-green-400 mb-4">Scheduled Scans</h2>
+            <div className="space-y-2">
+              {scheduledScans.map(scan => (
+                <div key={scan.id} className="flex items-center p-3 hover:bg-green-900/20 rounded-md">
+                  <div className="flex-grow">
+                    <p className="text-base text-green-400 font-bold capitalize">{scan.type} Scan</p>
+                    <p className="text-sm text-green-600">Sources: {scan.sources.join(', ')}</p>
+                  </div>
+                  <p className="text-sm text-green-700">{scan.time}</p>
+                </div>
+              ))}
             </div>
           </div>
       </div>

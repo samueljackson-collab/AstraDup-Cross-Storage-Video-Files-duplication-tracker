@@ -12,7 +12,7 @@ export const AnalysisItem: React.FC<{ label: string; value?: string | number | R
     const getConfidenceColors = (score: number) => {
         if (score >= 95) return { text: 'text-green-400', bg: 'bg-green-500' };
         if (score >= 80) return { text: 'text-yellow-400', bg: 'bg-yellow-500' };
-        return { text: 'text-orange-400', bg: 'bg-orange-500' };
+        return { text: 'text-red-400', bg: 'bg-red-500' };
     };
     const { text: textColor, bg: bgColor } = getConfidenceColors(confidence);
 
@@ -20,7 +20,7 @@ export const AnalysisItem: React.FC<{ label: string; value?: string | number | R
         <div>
             <div className="flex justify-between items-baseline mb-1">
                 <dt className="text-base font-semibold text-green-600">{label}</dt>
-                <dd className={`text-2xl font-extrabold ${textColor}`}>{confidence}%</dd>
+                <dd className={`text-3xl font-extrabold ${textColor}`}>{confidence}%</dd>
             </div>
             {value != null && (
                  <div className={`text-sm text-green-500 truncate mb-2 ${mono ? 'font-mono' : ''}`} title={typeof value === 'string' || typeof value === 'number' ? String(value) : undefined}>

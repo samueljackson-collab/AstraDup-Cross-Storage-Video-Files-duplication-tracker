@@ -8,6 +8,7 @@ import { startScan } from '../services/api';
 import type { ScanResult, StorageSource, FileType } from '../types';
 import { HardDriveIcon, ServerIcon, GoogleDriveIcon, DropboxIcon, OneDriveIcon, CheckCircleIcon, XCircleIcon } from '../components/Icons';
 import { FilmIcon, PhotoIcon, DocumentTextIcon } from '../components/FileTypeIcons';
+import ScheduleScanModal from '../components/ScheduleScanModal';
 
 type ScanPhase = 'type_selection' | 'source_selection' | 'scanning' | 'complete';
 
@@ -104,33 +105,45 @@ const ScanPage: React.FC = () => {
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [progress, setProgress] = useState(0);
   const [etr, setEtr] = useState('');
+  const [currentFile, setCurrentFile] = useState('');
   const [scanStartTime, setScanStartTime] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
+  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
 
   useEffect(() => {
     let interval: number | undefined;
     const totalDuration = 3; 
 
-    if (scanPhase === 'scanning' && scanStartTime) {
+    if (scanPhase === 'scanning') {
+        const mockFiles = Array.from({ length: 150 }, (_, i) => `file_${i + 1}.mp4`);
+        const totalFiles = mockFiles.length;
+        let processedFiles = 0;
+
         interval = window.setInterval(() => {
-            const elapsedTime = (Date.now() - scanStartTime) / 1000;
-            if (elapsedTime >= totalDuration) {
+            processedFiles++;
+            if (processedFiles > totalFiles) {
                 setProgress(99);
                 setEtr('Finishing up...');
+                setCurrentFile('');
                 clearInterval(interval);
                 return;
             }
-            const currentProgress = Math.floor((elapsedTime / totalDuration) * 100);
+
+            const currentProgress = Math.floor((processedFiles / totalFiles) * 100);
             setProgress(currentProgress);
-            const remainingTime = totalDuration - elapsedTime;
+            setCurrentFile(mockFiles[processedFiles - 1]);
+
+            const remainingFiles = totalFiles - processedFiles;
+            const timePerFile = 0.1; // seconds
+            const remainingTime = remainingFiles * timePerFile;
             const minutes = Math.floor(remainingTime / 60);
             const seconds = Math.floor(remainingTime % 60);
             setEtr(`~${minutes}m ${seconds.toString().padStart(2, '0')}s remaining`);
-        }, 150);
+        }, 100);
     }
     return () => clearInterval(interval);
-  }, [scanPhase, scanStartTime]);
+  }, [scanPhase]);
   
   const handleSelectScanType = (type: FileType) => {
     setScanType(type);
@@ -148,7 +161,7 @@ const ScanPage: React.FC = () => {
   
   const handleConnectSource = (sourceId: string) => {
     setConnectingSource(sourceId);
-    // DEMO ONLY: Simulates an SSO/OAuth connection. Replace with a real OAuth redirect in production.
+    // Simulate SSO login flow
     setTimeout(() => {
         setConnectedSources(prev => new Set(prev).add(sourceId));
         setSelectedSources(prev => new Set(prev).add(sourceId));
@@ -180,6 +193,11 @@ const ScanPage: React.FC = () => {
     }
   };
   
+  const handleScheduleScan = (schedule: any) => {
+    console.log('Scan scheduled:', schedule);
+    // Here you would typically send the schedule to a backend service
+  };
+
   const handleNewScan = () => {
     setScanPhase('type_selection');
     setScanResult(null);
@@ -221,10 +239,13 @@ const ScanPage: React.FC = () => {
                   />
                   <div className="mt-8 flex space-x-4">
                     <Button onClick={() => setIsModalOpen(true)} disabled={selectedSources.size === 0 || !!connectingSource}>
-                      Start {scanType ? scanType.charAt(0).toUpperCase() + scanType.slice(1) : ''} Scan
+                      Start {scanType} Scan
                     </Button>
                     <Button onClick={() => setScanPhase('type_selection')} variant="secondary">
                         Back
+                    </Button>
+                    <Button onClick={() => setIsScheduleModalOpen(true)} variant="outline">
+                        Schedule Scan
                     </Button>
                   </div>
                 </>
@@ -244,6 +265,7 @@ const ScanPage: React.FC = () => {
                         <div className="text-right text-sm text-green-600 mt-2">
                             <span>{etr}</span>
                         </div>
+                        {currentFile && <p className="text-center text-sm text-green-700 mt-4 truncate">Scanning: {currentFile}</p>}
                     </div>
                     <p className="text-green-600 text-base mt-8">This may take a while depending on the number of files.</p>
                 </div>
@@ -272,6 +294,11 @@ const ScanPage: React.FC = () => {
         scanType={scanType}
         sourceCount={selectedSources.size}
       />}
+      <ScheduleScanModal
+        isOpen={isScheduleModalOpen}
+        onClose={() => setIsScheduleModalOpen(false)}
+        onSchedule={handleScheduleScan}
+      />
       <h1 className="text-4xl font-extrabold tracking-tight text-green-400 mb-2">Duplicate Scan</h1>
       <p className="text-green-600 mb-8 text-lg">
         {scanPhase === 'type_selection' && 'First, select the type of file you want to scan for.'}
