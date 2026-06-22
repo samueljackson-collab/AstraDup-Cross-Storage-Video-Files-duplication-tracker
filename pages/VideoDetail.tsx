@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { FileText, BrainCircuit, History, AlertTriangle, Code, ChevronLeft, Sparkles, Loader, ChevronDown, ChevronUp } from 'lucide-react';
 import { enrichVideoMetadata } from '../services/gemini';
-import { extractFramesFromVideo } from '../utils/video';
 import CustomVideoPlayer from '../components/CustomVideoPlayer';
 import { VideoFile } from '../types';
 
@@ -58,8 +57,15 @@ const VideoDetail: React.FC = () => {
   const videoFile: VideoFile = {
       ...mockVideoData,
       fileType: 'video',
+      sizeMB: 1228.8,
       videoUrl: 'https://archive.org/download/BigBuckBunny_124/BigBuckBunny_512kb.mp4',
       thumbnailUrl: '',
+      enrichedData: {
+          title: '',
+          plot: '',
+          actors: [],
+          genre: '',
+      },
       analysis: {
           pHash: { value: '', confidence: 0 },
           dHash: { value: '', confidence: 0 },
