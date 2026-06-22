@@ -1,8 +1,8 @@
 
 import React from 'react';
 
-export const DetailItem: React.FC<{ label: string; value: React.ReactNode; mono?: boolean, highlight?: boolean }> = ({ label, value, mono, highlight }) => (
-    <div>
+export const DetailItem: React.FC<{ label: string; value: React.ReactNode; mono?: boolean, highlight?: boolean, className?: string }> = ({ label, value, mono, highlight, className }) => (
+    <div className={className}>
       <dt className={`text-base font-semibold ${highlight ? 'text-green-500' : 'text-green-600'}`}>{label}</dt>
       <dd className={`mt-1 text-base break-words ${mono ? 'font-mono' : ''} ${highlight ? 'text-green-300 bg-green-900/50 p-1 rounded' : 'text-green-400'}`}>{value}</dd>
     </div>
